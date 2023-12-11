@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    signingConfigs {
+        release {
+            def propsFile = rootProject.file('keystore.properties')
+            if (propsFile.exists()){
+                def keyStoreProps = new Properties()
+                keyStoreProps.load(new FileInputStream(propsFile))
+                storeFile = file(keyStoreProps['storeFile'])
+                storePassword = keyStoreProps['storePassword']
+                keyAlias = keyStoreProps['keyAlias']
+                keyPassword = keyStoreProps['keyPassword']
+            }
+        }
+    }
+    compileSdk 34
+
+
+    defaultConfig {
+        applicationId "com.polestar.iso21177poc.production.android"
+        minSdk 29
+        targetSdk 34
+        versionCode 18
+        versionName "18.0"
+        signingConfig signingConfigs.release
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+    }
+
+}
+
+dependencies {
+
+    implementation 'androidx.car.app:app-automotive:1.2.0-rc01'
+    implementation project(":iso21177poc:common")
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+}

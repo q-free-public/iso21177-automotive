@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ISO 21177 POC</string>
+    <string name="toll_cost">Price: %1$.2f %2$s</string>
+    <string name="toll_distance">Distance: %1$.2f %2$s</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="MyCarAppTheme">MyCarAppTheme
+<!--        <item name="colorPrimary">colorPrimaryBlueLight</item>-->
+<!--        <item name="colorPrimaryDark">@color/colorTextBlack</item>-->
+<!--        <item name="colorAccent">@color/colorPrimaryBlueDark</item>-->
+    </style>
+</resources>
