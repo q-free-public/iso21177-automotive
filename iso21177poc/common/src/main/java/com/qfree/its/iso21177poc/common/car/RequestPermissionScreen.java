@@ -2,6 +2,13 @@ package com.qfree.its.iso21177poc.common.car;
 
 import android.Manifest;
 
+import com.qfree.its.iso21177poc.common.geoflow.PermissionUtils;
+import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
+import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.car.app.CarContext;
 import androidx.car.app.OnRequestPermissionsListener;
@@ -12,14 +19,6 @@ import androidx.car.app.model.MessageTemplate;
 import androidx.car.app.model.OnClickListener;
 import androidx.car.app.model.ParkedOnlyOnClickListener;
 import androidx.car.app.model.Template;
-
-import com.qfree.its.iso21177poc.common.geoflow.GeoFlowService;
-import com.qfree.its.iso21177poc.common.geoflow.PermissionUtils;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RequestPermissionScreen extends Screen {
     private static final String TAG = RequestPermissionScreen.class.getSimpleName();
@@ -73,8 +72,8 @@ public class RequestPermissionScreen extends Screen {
                 .setOnClickListener(onClickListener)
                 .build();
 
-        return new MessageTemplate.Builder("The Road Pricing application needs access to location data and vehicle sensors. Please grant full permissions on the next pages.")
-                .setTitle("Road Pricing")
+        return new MessageTemplate.Builder("The ISO 21177 POC application needs access to location data and vehicle sensors. Please grant full permissions on the next pages.")
+                .setTitle("ISO 21177 POC")
                 .setHeaderAction(Action.APP_ICON)
                 .addAction(action)
                 .build();

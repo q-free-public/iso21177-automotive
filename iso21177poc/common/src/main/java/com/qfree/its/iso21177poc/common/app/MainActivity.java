@@ -25,8 +25,7 @@ import com.qfree.its.iso21177poc.common.geoflow.UiFields;
 import com.qfree.its.iso21177poc.common.geoflow.UiUtils;
 import com.qfree.its.iso21177poc.common.R;
 
-public class MainActivity extends AppCompatActivity
-        implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     private ServiceConnection mServiceConnection;
     private boolean mBound = false;
@@ -47,12 +46,8 @@ public class MainActivity extends AppCompatActivity
             if (mInitServiceBroadcastReceiver == null) {
                 mInitServiceBroadcastReceiver = new InitServiceBroadcastReceiver(this);
                 IntentFilter intentFilter = new IntentFilter();
-                intentFilter.addAction(Intent.ACTION_BOOT_COMPLETED);
-                intentFilter.addAction(Intent.ACTION_LOCKED_BOOT_COMPLETED);
                 intentFilter.addAction(Intent.ACTION_MY_PACKAGE_REPLACED);
                 intentFilter.addAction(InitServiceBroadcastReceiver.START_GEOFLOW_SERVICE_ACTION);
-                intentFilter.addAction(Intent.ACTION_SHUTDOWN);
-                intentFilter.addAction(Intent.ACTION_REBOOT);
                 registerReceiver(mInitServiceBroadcastReceiver, intentFilter);
             }
 

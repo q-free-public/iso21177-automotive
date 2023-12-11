@@ -1,20 +1,9 @@
 package com.qfree.its.iso21177poc.common.app;
 
-import static android.content.Context.MODE_PRIVATE;
-
-import android.content.Context;
-import android.util.Log;
-
-import com.google.gson.Gson;
-import com.qfree.its.iso21177poc.common.geoflow.Config;
 import com.qfree.its.iso21177poc.common.geoflow.QfreePosImpl;
 
 import org.osmdroid.util.GeoPoint;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 
 public class TripSummary {

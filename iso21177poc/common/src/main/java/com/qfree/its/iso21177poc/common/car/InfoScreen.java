@@ -8,7 +8,6 @@ import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.CarColor;
 import androidx.car.app.model.LongMessageTemplate;
-import androidx.car.app.model.MessageTemplate;
 import androidx.car.app.model.OnClickListener;
 import androidx.car.app.model.ParkedOnlyOnClickListener;
 import androidx.car.app.model.Template;
@@ -43,16 +42,16 @@ public class InfoScreen extends Screen {
             version = e.getMessage();
         }
 
-        String infoText = "This application is a part of the GeoFlow research project. " +
-                "It collects location data while applying geofence information from NVDB to calculate a Road User Charging fee based on distance driven, time of day, and zone. " +
-                "Your data is cryptographically protected and only available for research purposes in the project. " +
-                "The data collection starts then the gear selector is put in Drive and stopped when the gear is in Park. " +
+        String infoText = "This application is a part of the Norwegian Public Roads Administration (NPRA) METR project. " +
+                "It processes location data while applying Variable Message Signs (VMS) information from Datex-II " +
+                "to display information on a map. " +
+                "No user information, location information is stored or uploaded or otherwise retained. " +
                 "Application version " + version +
                 "\r\n\r\n" +
                 "Please contact its-pilot@vegvesen.no for more information.";
 
         return new LongMessageTemplate.Builder(infoText)
-                .setTitle("Road Pricing")
+                .setTitle("ISO 21177 POC")
                 .setHeaderAction(Action.APP_ICON)
                 .addAction(action)
                 .build();

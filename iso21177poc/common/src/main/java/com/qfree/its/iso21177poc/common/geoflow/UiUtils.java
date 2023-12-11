@@ -89,41 +89,13 @@ public class UiUtils {
 
         //Car info
         String carName = null;
-        String carOdo = null;
         double carSpeed = 0.0;
-        String vin = null;
-        String licensePlate = null;
-        String ignitionState = null;
-        String gearSelection = null;
-        String fuelPercent = null;
-        String batteryPercent = null;
-        String rangeRemaining = null;
 
         if (uiFields.getCarModel() != null) {
             carName = uiFields.getCarModel().getName().getValue();
         }
-        if (uiFields.getVin() != null) {
-            vin = uiFields.getVin();
-        }
-        if (uiFields.getGeoFlowAccount() != null && uiFields.getGeoFlowAccount().getGeoFlowVehicleRecord() != null) {
-            licensePlate = uiFields.getGeoFlowAccount().getGeoFlowVehicleRecord().licensePlate;
-        }
-        if (uiFields.getCarPropertyIgnitionState() != null) {
-            ignitionState = uiFields.getCarPropertyIgnitionState().getShortName();
-        }
-        if (uiFields.getCarPropertyGear() != null) {
-            gearSelection = uiFields.getCarPropertyGear().getShortName();
-        }
-        if (uiFields.getCarMileage() != null) {
-            carOdo = String.valueOf(uiFields.getCarMileage().getOdometerMeters().getValue());
-        }
         if (uiFields.getCarSpeed() != null) {
             carSpeed = uiFields.getCarSpeed().getRawSpeedMetersPerSecond().getValue();
-        }
-        if (uiFields.getCarEnergyLevel() != null) {
-            fuelPercent = String.valueOf(uiFields.getCarEnergyLevel().getFuelPercent().getValue());
-            batteryPercent = String.valueOf(uiFields.getCarEnergyLevel().getBatteryPercent().getValue());
-            rangeRemaining = String.valueOf(uiFields.getCarEnergyLevel().getRangeRemainingMeters().getValue());
         }
 
         String version = "?";
@@ -135,17 +107,8 @@ public class UiUtils {
         }
 
         String strCarInfo = "";
-        strCarInfo += "Id: " + licensePlate.trim() + " ";
-        if (vin != null)
-            strCarInfo += "; Vin: " + vin;
         if (carName != null)
             strCarInfo += "; Name: " + carName;
-        if (ignitionState != null)
-            strCarInfo += "; Ignition: " + ignitionState;
-        if (gearSelection != null)
-            strCarInfo += "; Gear: " + gearSelection;
-        if (carOdo != null)
-            strCarInfo += "; Odo: " + carOdo;
         strCarInfo += "; Speed: " + String.format(Locale.US, "%.2f", carSpeed);
         strCarInfo += "; Version: " + version;
         carInfo = new Row.Builder().setTitle("Car Info")
@@ -230,17 +193,13 @@ public class UiUtils {
             }
             amount = invoiceSummary.amount;
         }
-        String period = null;
-        if (uiFields.getBillingPeriod() != null) {
-            period = uiFields.getBillingPeriod().getInterval();
-        }
 
         thickClient = new Row.Builder().setTitle("Tolling")
                 .addText(String.format(Locale.ROOT,
                         "Zone: %s (%.2f %s/km) Dist: %.2f km Cost: %.2f %s " +
-                                "Period: %s Ended: %s Amount: %.2f %s",
+                                "Ended: %s Amount: %.2f %s",
                         zone, costPrKm, currency, distanceKm, cost, currency,
-                        period, invoiceTo, amount, currency
+                        invoiceTo, amount, currency
                 )).build();
 
         //Log file upload

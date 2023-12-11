@@ -19,9 +19,6 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.qfree.geoflow.toll.api.GeoFlowInvoiceSummary;
 import com.qfree.geoflow.toll.api.GeoFlowWsApiEventTollCostUpdate;
-import com.qfree.its.iso21177poc.common.car.CarPropertyGear;
-import com.qfree.its.iso21177poc.common.car.CarPropertyIgnitionState;
-import com.qfree.its.iso21177poc.common.geoflow.thick_client.BillingPeriod;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFilePostEvent;
 import com.qfree.its.location.Position;
 
@@ -43,12 +40,8 @@ public class UiFields {
     private Speed carSpeed;
     private EnergyLevel carEnergyLevel;
     private Mileage carMileage;
-    private CarPropertyGear carPropertyGear;
-    private CarPropertyIgnitionState carPropertyIgnitionState;
-    private GeoFlowAccountRecord geoFlowAccount;
     private String vin;
     private GeoFlowInvoiceSummary invoiceSummary;
-    private BillingPeriod billingPeriod;
     private long posCnt = -1;
     private long logFileUploadOkCount = 0;
     private long logFileUploadErrorCount = 0;
@@ -203,30 +196,6 @@ public class UiFields {
         this.carMileage = carMileage;
     }
 
-    public CarPropertyGear getCarPropertyGear() {
-        return carPropertyGear;
-    }
-
-    public void setCarPropertyGear(CarPropertyGear carPropertyGear) {
-        this.carPropertyGear = carPropertyGear;
-    }
-
-    public CarPropertyIgnitionState getCarPropertyIgnitionState() {
-        return carPropertyIgnitionState;
-    }
-
-    public void setCarPropertyIgnitionState(CarPropertyIgnitionState carPropertyIgnitionState) {
-        this.carPropertyIgnitionState = carPropertyIgnitionState;
-    }
-
-    public GeoFlowAccountRecord getGeoFlowAccount() {
-        return geoFlowAccount;
-    }
-
-    public void setGeoFlowAccount(GeoFlowAccountRecord geoFlowAccountRecord) {
-        this.geoFlowAccount = geoFlowAccountRecord;
-    }
-
     public String getVin() {
         return vin;
     }
@@ -241,14 +210,6 @@ public class UiFields {
 
     public GeoFlowInvoiceSummary getInvoiceSummary() {
         return invoiceSummary;
-    }
-
-    public void setBillingPeriod(BillingPeriod billingPeriod) {
-        this.billingPeriod = billingPeriod;
-    }
-
-    public BillingPeriod getBillingPeriod() {
-        return billingPeriod;
     }
 
     private static class LocalDateTimeSerializer implements JsonSerializer<LocalDateTime> {

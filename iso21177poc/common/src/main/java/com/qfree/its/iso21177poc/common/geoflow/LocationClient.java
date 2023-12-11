@@ -23,16 +23,13 @@ import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
 
 public class LocationClient {
     private static final String TAG = LocationClient.class.getSimpleName();
-
     private static final int LOCATION_UPDATE_MIN_INTERVAL_MILLIS = 500;
     private static final long LOCATION_UPDATE_FASTEST_INTERVAL_MILLIS = 100;
-
     private final Handler mEventHandler;
     private final LocationRequest mLocationRequest;
     private final LocationCallback mLocationCallback;
     private final FusedLocationProviderClient mFusedLocationProviderClient;
     private final Context mContext;
-    private Location mLastGoodKnownLocation;
 
     public LocationClient(Context context, Handler eventHandler) {
         Log.d(TAG, "LocationClient: c'tor (enter)");
@@ -74,10 +71,6 @@ public class LocationClient {
         mFusedLocationProviderClient.removeLocationUpdates(mLocationCallback);
     }
 
-    public Location getLastGoodKnownLocation() {
-        return mLastGoodKnownLocation;
-    }
-
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(LOCATION_UPDATE_MIN_INTERVAL_MILLIS);
@@ -91,8 +84,8 @@ public class LocationClient {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
 //                Log.d(TAG, "onLocationResult: " + locationResult.getLastLocation());
-                mLastGoodKnownLocation = locationResult.getLastLocation();
-                mEventHandler.obtainMessage(EventHandler.LOCATION_UPDATE_EVENT_MSG, mLastGoodKnownLocation).sendToTarget();
+                Location lastLocation = locationResult.getLastLocation();
+                mEventHandler.obtainMessage(EventHandler.LOCATION_UPDATE_EVENT_MSG, lastLocation).sendToTarget();
             }
 
             @Override

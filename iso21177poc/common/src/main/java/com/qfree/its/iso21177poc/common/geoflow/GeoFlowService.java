@@ -21,9 +21,6 @@ import com.qfree.geoflow.toll.api.GeoFlowUserRecord;
 import com.qfree.geoflow.toll.api.GeoFlowVehicleRecord;
 import com.qfree.geoflow.toll.api.HmiOption;
 import com.qfree.its.iso21177poc.common.car.CarPropertyClient;
-import com.qfree.its.iso21177poc.common.geoflow.thick_client.CostTableImpl;
-import com.qfree.its.iso21177poc.common.geoflow.thick_client.PrivateVaultImpl;
-import com.qfree.its.iso21177poc.common.geoflow.thick_client.TollZoneGetThread;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFilePostThread;
@@ -35,10 +32,8 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
     private final IBinder binder = new RequestLocationBinder();
     private LocationClient mLocationClient;
     private EventHandler mEventHandler;
-    private CostTableImpl mCostTable;
     private Looper mServiceLooper;
     private PackageManager mPackageManager;
-    private PrivateVaultImpl mPrivateVault;
 
     @Override
     public void onCreate() {
@@ -56,28 +51,13 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
             thread.start();
             mServiceLooper = thread.getLooper();
 
-            //Init DB
-            GeoFlowSQLiteDb geoFlowSQLiteDb = new GeoFlowSQLiteDb(getApplicationContext());
-            mSqLiteDatabase = geoFlowSQLiteDb.getWritableDatabase();
-            GeoFlowUserRecord user = geoFlowSQLiteDb.loadUser();
-            GeoFlowVehicleRecord mVehicle = geoFlowSQLiteDb.loadVehicle();
             //Init packageManager
             mPackageManager = getApplicationContext().getPackageManager();
             String appVersion = getAppVersion();
 
-            //Init thin_client_logger
-            FileLogger.setInfo(mVehicle, user, appVersion);
-            FileLogger.logEvent(LogEvents.SYSTEM_START, TAG + " onCreate");
-
-            //Init privateVault
-            mPrivateVault = new PrivateVaultImpl(geoFlowSQLiteDb);
-            mPrivateVault.setUser(user);
-            mPrivateVault.setVehicle(mVehicle);
-
-            //Init costTable
-            mCostTable = new CostTableImpl(geoFlowSQLiteDb);
             //Init eventHandler
-            mEventHandler = new EventHandler(getApplicationContext(), mServiceLooper, geoFlowSQLiteDb, mPrivateVault, mCostTable);
+            mEventHandler = new EventHandler(getApplicationContext(), mServiceLooper);
+
             //Init locationClient
             mLocationClient = new LocationClient(getApplicationContext(), mEventHandler);
         } catch (Exception e) {
@@ -101,33 +81,7 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
             Notification notification = GeoFlowServiceNotification.createNotificationChannel(getApplicationContext());
             startForeground(1, notification);
 
-            if (true) {
-                FileLogger.logEvent(LogEvents.SYSTEM_START, TAG + " onStartCommand: " + intent.getExtras().getString("intent"));
-                try {
-                    mPrivateVault.initialize(null);
-                } catch (Exception e) {
-                    FileLogger.logEvent(LogEvents.EXCEPTION, "Private Vault not initialized");
-                    e.printStackTrace();
-                }
-                // Download tolling zones
-                if (mCostTable != null && mEventHandler != null) {
-                    TollZoneGetThread tollZoneGetThread = new TollZoneGetThread(
-                            Config.SERVER_URL + Config.SERVLET_FILEPATH_DOWNLOAD_TOLLING_ZONES,
-                            FileLogger.getVehicleIdStr(), FileLogger.getUser()!= null?FileLogger.getUser().name:"polestar",
-                            mCostTable, mEventHandler, 5000);
-                    tollZoneGetThread.start();
-                    mCostTable.loadZonesFromSqLiteAndroid();
-                }
-
-                //Post thin_client_log file, but not the file created on installation
-                if (!FileLogger.getVehicleIdStr().equals("INIT")){
-                    FileLogger.closeLogFile("GeoFlowService.onStartCommand");
-                    LogFilePostThread logFilePostThread = new LogFilePostThread(
-                            Config.SERVER_URL + Config.SERVLET_FILEPATH_UPLOAD_LOG_FILE,
-                            mEventHandler, 5000);
-                    logFilePostThread.start();
-                }
-            }
+            FileLogger.logEvent(LogEvents.SYSTEM_START, TAG + " onStartCommand: " + intent.getExtras().getString("intent"));
 
             //Start location updates here
             if (mLocationClient != null) {
@@ -144,10 +98,7 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
             if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
                 CarPropertyClient.init(getApplicationContext(), mEventHandler);
                 CarPropertyClient.getVehicleIdentificationNumber();
-                CarPropertyClient.registerGearSelectionCallback();
-                CarPropertyClient.registerIgnitionStateCallback();
                 CarPropertyClient.registerVehicleSpeedCallback();
-                CarPropertyClient.registerOdometerCallback();
             }
         } catch (Exception e) {
             try {
@@ -246,10 +197,6 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
 
     public EventHandler getEventHandler() {
         return this.mEventHandler;
-    }
-
-    public CostTableImpl getCostTable() {
-        return mCostTable;
     }
 
     public class RequestLocationBinder extends Binder {

@@ -2,25 +2,19 @@ package com.qfree.its.iso21177poc.common.car;
 
 import android.util.Log;
 
+import com.qfree.its.iso21177poc.common.geoflow.EventHandler;
+
+import java.util.Locale;
+
 import androidx.annotation.NonNull;
 import androidx.car.app.CarContext;
 import androidx.car.app.hardware.CarHardwareManager;
 import androidx.car.app.hardware.common.OnCarDataAvailableListener;
-import androidx.car.app.hardware.info.Accelerometer;
 import androidx.car.app.hardware.info.CarHardwareLocation;
 import androidx.car.app.hardware.info.CarInfo;
-import androidx.car.app.hardware.info.CarSensors;
-import androidx.car.app.hardware.info.Compass;
-import androidx.car.app.hardware.info.EnergyLevel;
 import androidx.car.app.hardware.info.EnergyProfile;
-import androidx.car.app.hardware.info.Gyroscope;
-import androidx.car.app.hardware.info.Mileage;
 import androidx.car.app.hardware.info.Model;
 import androidx.car.app.hardware.info.Speed;
-
-import com.qfree.its.iso21177poc.common.geoflow.EventHandler;
-
-import java.util.Locale;
 
 /*Implements androidx.car.app. Currently not in use for CarInfo*/
 
@@ -82,75 +76,6 @@ public class CarHardwareUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        try {
-            carInfo.addEnergyLevelListener(carContext.getMainExecutor(), new OnCarDataAvailableListener<EnergyLevel>() {
-                @Override
-                public void onCarDataAvailable(@NonNull EnergyLevel data) {
-    //                Log.d(TAG, "onCarDataAvailable: EnergyLevel " + data);
-                    eventHandler.obtainMessage(EventHandler.CAR_ENERGY_LEVEL_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //Not allowed for Play Store apps.
-        try {
-            carInfo.addMileageListener(carContext.getMainExecutor(), new OnCarDataAvailableListener<Mileage>() {
-                @Override
-                public void onCarDataAvailable(@NonNull Mileage data) {
-//                    Log.d(TAG, "onCarDataAvailable: Mileage " + data);
-                    eventHandler.obtainMessage(EventHandler.CAR_MILEAGE_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void monitorCarSensors(CarContext carContext, EventHandler eventHandler) {
-        Log.d(TAG, "monitorCarSensors: ");
-        CarHardwareManager carHardwareManager = carContext.getCarService(CarHardwareManager.class);
-        CarSensors carSensors = carHardwareManager.getCarSensors();
-        try {
-            carSensors.addAccelerometerListener(CarSensors.UPDATE_RATE_NORMAL, carContext.getMainExecutor(), new OnCarDataAvailableListener<Accelerometer>() {
-                @Override
-                public void onCarDataAvailable(@NonNull Accelerometer data) {
-                    eventHandler.obtainMessage(EventHandler.CAR_ACCELEROMETER_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            carSensors.addCarHardwareLocationListener(CarSensors.UPDATE_RATE_NORMAL, carContext.getMainExecutor(), new OnCarDataAvailableListener<CarHardwareLocation>() {
-                @Override
-                public void onCarDataAvailable(@NonNull CarHardwareLocation data) {
-                    eventHandler.obtainMessage(EventHandler.CAR_HW_LOCATION_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            carSensors.addCompassListener(CarSensors.UPDATE_RATE_NORMAL, carContext.getMainExecutor(), new OnCarDataAvailableListener<Compass>() {
-                @Override
-                public void onCarDataAvailable(@NonNull Compass data) {
-                    eventHandler.obtainMessage(EventHandler.CAR_COMPASS_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            carSensors.addGyroscopeListener(CarSensors.UPDATE_RATE_NORMAL, carContext.getMainExecutor(), new OnCarDataAvailableListener<Gyroscope>() {
-                @Override
-                public void onCarDataAvailable(@NonNull Gyroscope data) {
-                    eventHandler.obtainMessage(EventHandler.CAR_GYRO_DATA_EVENT_MSG, data).sendToTarget();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public static String carModelToLogString(Model data) {
@@ -158,47 +83,9 @@ public class CarHardwareUtils {
                 data.getManufacturer().getValue(), data.getName().getValue(), data.getYear().getValue());
     }
 
-    public static String carEnergyProfileToLogString(EnergyProfile data) {
-        return String.format(Locale.ROOT, "EvConnectorTypes: %s, FuelTypes %s",
-                data.getEvConnectorTypes().getValue(), data.getFuelTypes().getValue());
-    }
-
     public static String carSpeedToLogString(Speed data) {
         return String.format(Locale.ROOT, "RawSpeedMps: %s, DisplaySpeedMps: %s, DisplayUnit: %s",
                 data.getRawSpeedMetersPerSecond().getValue(), data.getDisplaySpeedMetersPerSecond().getValue(), data.getSpeedDisplayUnit().getValue());
-    }
-
-    public static String carEnergyLevelToLogString(EnergyLevel data) {
-        return String.format(Locale.ROOT,
-                "BatteryPercent: %s, FuelPercent: %s, EnergyIsLow: %s, RangeRemainingM: %s," +
-                        "DistanceDisplayUnit: %s, FuelVolumeDisplayUnit: %s",
-                data.getBatteryPercent().getValue(), data.getFuelPercent().getValue(), data.getEnergyIsLow().getValue(),
-                data.getRangeRemainingMeters().getValue(), data.getDistanceDisplayUnit().getValue(),
-                data.getFuelVolumeDisplayUnit().getValue());
-    }
-
-    public static String carMileageToLogString(Mileage data) {
-        return String.format(Locale.ROOT,
-                "OdoMeter: %s, DistanceMeters: %s",
-                data.getOdometerMeters().getValue(), data.getDistanceDisplayUnit().getValue());
-    }
-
-    public static String carAccelerometerToLogString(Accelerometer data) {
-        return String.format(Locale.ROOT,
-                "Forces: %s",
-                data.getForces().getValue());
-    }
-
-    public static String carCompassToLogString(Compass data) {
-        return String.format(Locale.ROOT,
-                "Orientations: %s",
-                data.getOrientations().getValue());
-    }
-
-    public static String carGyroscopeToLogString(Gyroscope data) {
-        return String.format(Locale.ROOT,
-                "Rotations: %s",
-                data.getRotations().getValue());
     }
 
     public static String carHwLocationToLogString(CarHardwareLocation data) {

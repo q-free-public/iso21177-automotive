@@ -29,9 +29,8 @@ public class InitServiceBroadcastReceiver extends BroadcastReceiver {
         FileLogger.setContext(context);
         FileLogger.log("InitServiceBroadcastReceiver.onReceive: " + intent.getAction());
         try {
-            if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)
-                    || intent.getAction().equals(Intent.ACTION_LOCKED_BOOT_COMPLETED)
-                    || intent.getAction().equals(Intent.ACTION_MY_PACKAGE_REPLACED)
+            if (
+                       intent.getAction().equals(Intent.ACTION_MY_PACKAGE_REPLACED)
                     || intent.getAction().equals(START_GEOFLOW_SERVICE_ACTION)
                     || intent.getAction().equals(Intent.ACTION_DREAMING_STOPPED)
                     || intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
@@ -41,14 +40,6 @@ public class InitServiceBroadcastReceiver extends BroadcastReceiver {
                 }
                 this.mGeoFlowServiceIntent.putExtra("intent", intent.getAction());
                 context.startForegroundService(mGeoFlowServiceIntent);
-                //TODO: Log system start and system stop
-            } else if (intent.getAction().equals(Intent.ACTION_SHUTDOWN)
-                    || intent.getAction().equals(Intent.ACTION_REBOOT)
-                    || intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                if (this.mGeoFlowServiceIntent != null){
-                    this.mGeoFlowServiceIntent.putExtra("intent", action);
-//                    context.stopService(mGeoFlowServiceIntent);
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();

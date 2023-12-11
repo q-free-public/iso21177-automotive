@@ -13,60 +13,21 @@ import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
 
 public class CarPropertyClient {
     private static final String TAG = CarPropertyClient.class.getSimpleName();
-
     private static CarPropertyManager mCarPropertyManager;
     private static EventHandler       mEventHandler;
-    private static CarPropertyManager.CarPropertyEventCallback gearSelectionEventCallback;
-    private static CarPropertyManager.CarPropertyEventCallback ignitionStatEventCallback;
     private static CarPropertyManager.CarPropertyEventCallback vehicleSpeedEventCallback;
-    private static CarPropertyManager.CarPropertyEventCallback odometerEventCallback;
 
     public static void init(Context context, EventHandler eventHandler) {
         FileLogger.log("CarPropertyClient.init: create callbacks");
-        if (gearSelectionEventCallback != null && mCarPropertyManager != null) {
+        if (vehicleSpeedEventCallback != null && mCarPropertyManager != null) {
             FileLogger.log("CarPropertyClient.init: callbacks was initialized - doing unregisterCallback!!");
-            mCarPropertyManager.unregisterCallback(gearSelectionEventCallback);
-            mCarPropertyManager.unregisterCallback(ignitionStatEventCallback);
             mCarPropertyManager.unregisterCallback(vehicleSpeedEventCallback);
-            mCarPropertyManager.unregisterCallback(odometerEventCallback);
-
-            gearSelectionEventCallback = null;
-            ignitionStatEventCallback = null;
             vehicleSpeedEventCallback = null;
-            odometerEventCallback = null;
         }
 
         Car car = Car.createCar(context);
         mCarPropertyManager = (CarPropertyManager) car.getCarManager(Car.PROPERTY_SERVICE);
         mEventHandler = eventHandler;
-
-        if (gearSelectionEventCallback == null) {
-            gearSelectionEventCallback = new CarPropertyManager.CarPropertyEventCallback() {
-                @Override
-                public void onChangeEvent(CarPropertyValue carPropertyValue) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_GEAR_SELECTION_EVENT_MSG, carPropertyValue).sendToTarget();
-                }
-
-                @Override
-                public void onErrorEvent(int i, int i1) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_GEAR_SELECTION_EVENT_MSG, "onErrorEvent").sendToTarget();
-                }
-            };
-        }
-
-        if (ignitionStatEventCallback == null) {
-            ignitionStatEventCallback = new CarPropertyManager.CarPropertyEventCallback() {
-                @Override
-                public void onChangeEvent(CarPropertyValue carPropertyValue) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_IGNITION_STATE_EVENT_MSG, carPropertyValue).sendToTarget();
-                }
-
-                @Override
-                public void onErrorEvent(int i, int i1) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_IGNITION_STATE_EVENT_MSG, "onErrorEvent").sendToTarget();
-                }
-            };
-        }
 
         if (vehicleSpeedEventCallback == null) {
             vehicleSpeedEventCallback = new CarPropertyManager.CarPropertyEventCallback() {
@@ -78,20 +39,6 @@ public class CarPropertyClient {
                 @Override
                 public void onErrorEvent(int i, int i1) {
                     mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_VEHICLE_SPEED_EVENT_MSG, "onErrorEvent").sendToTarget();
-                }
-            };
-        }
-
-        if (odometerEventCallback == null) {
-            odometerEventCallback = new CarPropertyManager.CarPropertyEventCallback() {
-                @Override
-                public void onChangeEvent(CarPropertyValue carPropertyValue) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_ODOMETER_EVENT_MSG, carPropertyValue).sendToTarget();
-                }
-
-                @Override
-                public void onErrorEvent(int i, int i1) {
-                    mEventHandler.obtainMessage(EventHandler.CAR_PROPERTY_ODOMETER_EVENT_MSG, "onErrorEvent").sendToTarget();
                 }
             };
         }
@@ -132,36 +79,9 @@ public class CarPropertyClient {
         }
     }
 
-    public static void registerGearSelectionCallback(){
-        try {
-            mCarPropertyManager.registerCallback(gearSelectionEventCallback, VehiclePropertyIds.GEAR_SELECTION, CarPropertyManager.SENSOR_RATE_NORMAL);
-        } catch (Exception e) {
-            mEventHandler.obtainMessage(EventHandler.EXCEPTION_EVENT_MSG, e).sendToTarget();
-            e.printStackTrace();
-        }
-    }
-
-    public static void registerIgnitionStateCallback(){
-        try {
-            mCarPropertyManager.registerCallback(ignitionStatEventCallback, VehiclePropertyIds.IGNITION_STATE, CarPropertyManager.SENSOR_RATE_NORMAL);
-        } catch (Exception e) {
-            mEventHandler.obtainMessage(EventHandler.EXCEPTION_EVENT_MSG, e).sendToTarget();
-            e.printStackTrace();
-        }
-    }
-
     public static void registerVehicleSpeedCallback() {
         try {
             mCarPropertyManager.registerCallback(vehicleSpeedEventCallback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL);
-        } catch (Exception e) {
-            mEventHandler.obtainMessage(EventHandler.EXCEPTION_EVENT_MSG, e).sendToTarget();
-            e.printStackTrace();
-        }
-    }
-
-    public static void registerOdometerCallback(){
-        try {
-            mCarPropertyManager.registerCallback(odometerEventCallback, VehiclePropertyIds.PERF_ODOMETER, CarPropertyManager.SENSOR_RATE_NORMAL);
         } catch (Exception e) {
             mEventHandler.obtainMessage(EventHandler.EXCEPTION_EVENT_MSG, e).sendToTarget();
             e.printStackTrace();

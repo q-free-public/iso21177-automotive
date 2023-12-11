@@ -10,10 +10,15 @@ import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.qfree.its.iso21177poc.common.app.MapActivity;
+import com.qfree.its.iso21177poc.common.geoflow.GeoFlowService;
+import com.qfree.its.iso21177poc.common.geoflow.InitServiceBroadcastReceiver;
+import com.qfree.its.iso21177poc.common.geoflow.PermissionUtils;
+import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
+import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
+
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.car.app.CarAppService;
-import androidx.car.app.OnScreenResultListener;
 import androidx.car.app.Screen;
 import androidx.car.app.ScreenManager;
 import androidx.car.app.Session;
@@ -23,18 +28,9 @@ import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
-import androidx.preference.PreferenceManager;
-
-import com.qfree.its.iso21177poc.common.geoflow.GeoFlowService;
-import com.qfree.its.iso21177poc.common.geoflow.InitServiceBroadcastReceiver;
-import com.qfree.its.iso21177poc.common.geoflow.PermissionUtils;
-import com.qfree.its.iso21177poc.common.geoflow.GeoFlowAccountUtils;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
 
 public class GeoFlowCarAppService extends CarAppService implements DefaultLifecycleObserver {
     private static final String TAG = GeoFlowCarAppService.class.getSimpleName();
-
     InitServiceBroadcastReceiver mInitServiceBroadcastReceiver;
     private GeoFlowService mGeoFlowService;
     private ServiceConnection mServiceConnection;
@@ -53,14 +49,8 @@ public class GeoFlowCarAppService extends CarAppService implements DefaultLifecy
         if (mInitServiceBroadcastReceiver == null) {
             mInitServiceBroadcastReceiver = new InitServiceBroadcastReceiver(this);
             IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(Intent.ACTION_BOOT_COMPLETED);
-            intentFilter.addAction(Intent.ACTION_LOCKED_BOOT_COMPLETED);
             intentFilter.addAction(Intent.ACTION_MY_PACKAGE_REPLACED);
             intentFilter.addAction(InitServiceBroadcastReceiver.START_GEOFLOW_SERVICE_ACTION);
-            intentFilter.addAction(Intent.ACTION_SHUTDOWN);
-            intentFilter.addAction(Intent.ACTION_REBOOT);
-            intentFilter.addAction(Intent.ACTION_SCREEN_ON);
-            intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(mInitServiceBroadcastReceiver, intentFilter);
         }
         sendBroadcast(new Intent(this, InitServiceBroadcastReceiver.class)
@@ -72,7 +62,6 @@ public class GeoFlowCarAppService extends CarAppService implements DefaultLifecy
             mServiceConnection = getServiceConnection();
             bindService(requestLocationServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
         }
-
     }
 
     //TODO: Check if createHostValidator is ok
@@ -102,27 +91,14 @@ public class GeoFlowCarAppService extends CarAppService implements DefaultLifecy
                 @Override
                 public Screen onCreateScreen(@NonNull Intent intent) {
                     logLifecycle(TAG + " onCreateScreen");
-                    //Default screen
-                    getCarContext().getCarService(ScreenManager.class).push(new TollInfoScreen(getCarContext()));
+                    // Default screen
+//                  getCarContext().getCarService(ScreenManager.class).push(new TollInfoScreen(getCarContext()));
 
-                    //Register user
-//                    GeoFlowAccountUtils.setRegistered(PreferenceManager.getDefaultSharedPreferences(getCarContext()), false);
-                    if (!GeoFlowAccountUtils.hasRegistered(PreferenceManager.getDefaultSharedPreferences(getCarContext()))) {
-                        getCarContext().getCarService(ScreenManager.class).push(new SignInScreen(getCarContext(),
-                                new GeoFlowAccountUtils.LicensePlateNumberCallback() {
-                            @Override
-                            public void onLicensePlateNumberProvided(String licencePlateNumber) {
-                                try {
-                                    Log.d(TAG, "onLicensePlateNumberProvided: " + licencePlateNumber);
-                                    if (mBound){
-                                        logLifecycle(TAG + " onLicensePlateNumberProvided: " + licencePlateNumber);
-                                        GeoFlowAccountUtils.getCarInfoModel(getCarContext(), licencePlateNumber, mGeoFlowService.getEventHandler());
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }));
+                    if (true) {
+                        FileLogger.log("Launch MapActivity from PARK");
+                        Intent launchMapActivityIntent = new Intent(getCarContext(), MapActivity.class);
+                        launchMapActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        getCarContext().startActivity(launchMapActivityIntent);
                     }
 
                     //Request permissions
