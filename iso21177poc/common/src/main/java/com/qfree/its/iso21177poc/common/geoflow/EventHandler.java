@@ -10,14 +10,11 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.qfree.geoflow.toll.api.GeoFlowTollingState;
 import com.qfree.its.iso21177poc.common.app.TripSummary;
 import com.qfree.its.iso21177poc.common.car.CarHardwareUtils;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
-import com.qfree.nvdb.service.NvdbGeoflowZone;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -45,12 +42,9 @@ public class EventHandler extends Handler {
     private final Context mContext;
     private final SharedPreferences mSharedPreferences;
     private final UiFields mUiFields;
-    private final GeoFlowTollingState mTollingStateTotalTrip;
     private QfreePosImpl mPrevPosition;
-    private final GeoFlowTollingState mTollingStateVaultBatch;
     private long posCnt = 0;
 
-    private static ArrayList<NvdbGeoflowZone> mGeoFlowZones;
     private static TripSummary mTripSummary;
     private static TripSummary mTripZero;
 
@@ -59,8 +53,6 @@ public class EventHandler extends Handler {
         this.mContext = context;
         this.mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         this.mUiFields = UiFields.retrieveFromPreference(this.mSharedPreferences);
-        this.mTollingStateTotalTrip = new GeoFlowTollingState();
-        this.mTollingStateVaultBatch = new GeoFlowTollingState();
         mTripSummary = new TripSummary();
     }
 
@@ -134,10 +126,6 @@ public class EventHandler extends Handler {
             }
             e.printStackTrace();
         }
-    }
-
-    public static ArrayList<NvdbGeoflowZone> getGeoFlowZones() {
-        return mGeoFlowZones;
     }
 
     public static TripSummary getTripSummary() {

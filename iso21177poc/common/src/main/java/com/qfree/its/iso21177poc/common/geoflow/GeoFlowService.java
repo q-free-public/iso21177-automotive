@@ -13,7 +13,6 @@ import android.os.Process;
 import android.os.StrictMode;
 import android.util.Log;
 
-import com.qfree.geoflow.toll.api.HmiOption;
 import com.qfree.its.iso21177poc.common.BuildConfig;
 import com.qfree.its.iso21177poc.common.car.CarPropertyClient;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
@@ -163,21 +162,11 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "onBind: " + intent);
-        try {
-            FileLogger.logEvent(LogEvents.HMI, HmiOption.ANDROID_AUTO.name());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return binder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        try {
-            FileLogger.logEvent(LogEvents.HMI, HmiOption.NONE.name());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return super.onUnbind(intent);
     }
 

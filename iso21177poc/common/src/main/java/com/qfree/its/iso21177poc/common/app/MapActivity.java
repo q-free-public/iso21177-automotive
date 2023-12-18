@@ -6,19 +6,16 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.qfree.its.iso21177poc.common.R;
 import com.qfree.its.iso21177poc.common.geoflow.EventHandler;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
-import com.qfree.its.iso21177poc.common.R;
-import com.qfree.nvdb.service.NvdbGeoflowZone;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.views.MapView;
 
-import java.util.ArrayList;
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MapActivity extends AppCompatActivity {
     private static final String TAG = MapActivity.class.getSimpleName();
@@ -103,8 +100,6 @@ public class MapActivity extends AppCompatActivity {
 
     private void populateTripView() {
         Log.d(TAG, "populateTripView");
-        ArrayList<NvdbGeoflowZone> mGeoFlowZones = EventHandler.getGeoFlowZones();
-        OsmdroidUtils.drawGeoFlowZones(getApplicationContext(), mMapView, mGeoFlowZones);
         TripSummary mTripSummary = EventHandler.getTripSummary();
         if (mTripSummary != null) {
             OsmdroidUtils.drawRoute(getApplicationContext(), mMapView, mMapController, mTripSummary.getTripRoute());

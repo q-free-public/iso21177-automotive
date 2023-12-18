@@ -5,8 +5,6 @@ public enum LogEvents {
     SYSTEM_START,
     SYSTEM_STOP,
     GPS,
-    HMI,
-    LAST_KNOWN_GOOD,
     APP_VERSION,
     EXCEPTION,
     CAR_MODEL,

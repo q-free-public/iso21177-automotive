@@ -4,24 +4,20 @@ import android.app.Activity;
 import android.content.pm.PackageInfo;
 import android.widget.TextView;
 
-import androidx.car.app.CarContext;
-import androidx.car.app.model.Pane;
-import androidx.car.app.model.Row;
-
-import com.qfree.geoflow.toll.api.GeoFlowInvoiceSummary;
-import com.qfree.geoflow.toll.api.GeoFlowWsApiEventTollCostUpdate;
-import com.qfree.its.iso21177poc.common.app.MainActivity;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFilePostEvent;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFormatStrings;
 import com.qfree.its.iso21177poc.common.R;
+import com.qfree.its.iso21177poc.common.app.MainActivity;
+import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFormatStrings;
 import com.qfree.its.location.Position;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+
+import androidx.car.app.CarContext;
+import androidx.car.app.model.Pane;
+import androidx.car.app.model.Row;
 
 public class UiUtils {
     private static final Locale locale = Locale.ROOT;
@@ -120,24 +116,25 @@ public class UiUtils {
         }
 
         //Excluded, exceed info limitations on screen
-//        Row locationMeta = new Row.Builder().setTitle("Location Meta").build();
+        Row locationMeta = new Row.Builder().setTitle("Location Meta").addText("No information").build();
         if (pos != null) {
-//            locationMeta = new Row.Builder().setTitle("Location Meta")
-//                    .addText(String.format(Locale.ROOT,
-//                            "Velo: %.2f " +
-//                                    "nSats: %d " +
-//                                    "Err: %.2f " +
-//                                    "hdop: %.2f " +
-//                                    "Prot lim: %.2f",
-//                            pos.getVelocity(),
-//                            pos.getSatelliteCount(),
-//                            Math.sqrt(pos.getPositionCovarianceMatrix()[0]),
-//                            pos.getHdop(),
-//                            pos.getHorizontalProtectionLimit())).build();
+            locationMeta = new Row.Builder().setTitle("Location Meta")
+                    .addText(String.format(Locale.ROOT,
+                            "Velo: %.2f " +
+                                    "nSats: %d " +
+                                    "Err: %.2f " +
+                                    "hdop: %.2f " +
+                                    "ProtLim: %.2f",
+                            pos.getVelocity(),
+                            pos.getSatelliteCount(),
+                            (pos.getPositionCovarianceMatrix() != null ? Math.sqrt(pos.getPositionCovarianceMatrix()[0]) : 0.0),
+                            pos.getHdop(),
+                            pos.getHorizontalProtectionLimit())).build();
         }
 
         return new Pane.Builder()
                 .addRow(carInfo)
-                .addRow(location);
+                .addRow(location)
+                .addRow(locationMeta);
     }
 }

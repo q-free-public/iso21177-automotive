@@ -3,7 +3,6 @@ package com.qfree.its.iso21177poc.common.geoflow.thin_client;
 import android.content.Context;
 import android.util.Log;
 
-import com.qfree.geoflow.toll.api.LastKnownGoodPosition;
 import com.qfree.its.iso21177poc.common.geoflow.Config;
 import com.qfree.its.location.Position;
 
@@ -124,16 +123,6 @@ public class FileLogger {
 //				Log.d(TAG, "logEvent(gps): " + String.format(Locale.US, LogFormatStrings.logLineGPSFormatStr, pos.getLongitude(), pos.getLatitude(),
 //						pos.getHeight(), pos.getHeading(), pos.getVelocity(), pos.getSatelliteCount(), pos.getUbloxFixType(),
 //						pos.getHdop(), Math.sqrt(pos.getPositionCovarianceMatrix()[0])));
-				break;
-			case LAST_KNOWN_GOOD:
-				LastKnownGoodPosition lastKnown = (LastKnownGoodPosition) info;
-				activePrintWriter.format(Locale.US, LogFormatStrings.logLineGPSFormatStr, lastKnown.pos.getLongitude(), lastKnown.pos.getLatitude(),
-						lastKnown.pos.getHeight(), lastKnown.pos.getHeading(), lastKnown.pos.getVelocity(), 0, 0,
-						0.0, 0.0);
-				//To console
-//				Log.d(TAG, "logEvent(lastknown): " + String.format(Locale.US, LogFormatStrings.logLineGPSFormatStr, lastKnown.pos.getLongitude(), lastKnown.pos.getLatitude(),
-//						lastKnown.pos.getHeight(), lastKnown.pos.getHeading(), lastKnown.pos.getVelocity(), 0, 0,
-//						0.0, 0.0));
 				break;
 			default:
 				activePrintWriter.format(Locale.US, LogFormatStrings.logLineDefaultFormatStr, (String) info);

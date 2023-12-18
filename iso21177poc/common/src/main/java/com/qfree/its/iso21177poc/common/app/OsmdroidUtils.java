@@ -4,11 +4,7 @@ import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 
-import androidx.core.content.res.ResourcesCompat;
-
 import com.qfree.its.iso21177poc.common.R;
-import com.qfree.nvdb.service.NvdbGeoflowZone;
-import com.qfree.nvdb.service.NvdbPoint;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -19,6 +15,8 @@ import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
+
+import androidx.core.content.res.ResourcesCompat;
 
 public class OsmdroidUtils {
     private static final String TAG = OsmdroidUtils.class.getSimpleName();
@@ -51,36 +49,6 @@ public class OsmdroidUtils {
 
     public static void setCenterPosition(IMapController mapController, GeoPoint geoPoint) {
         mapController.setCenter(geoPoint);
-    }
-
-    public static void drawGeoFlowZones(Context context, MapView map, ArrayList<NvdbGeoflowZone> zones) {
-        clearZones(map);
-        if (zones != null && !zones.isEmpty()) {
-            for (NvdbGeoflowZone zone : zones) {
-                ArrayList<GeoPoint> geoPoints = getGeoPoints(zone);
-                Polygon polygon = new Polygon();
-                polygon.setPoints(geoPoints);
-                polygon.getFillPaint().setColor(context.getResources().getColor(R.color.zone_blue, null));
-                polygon.getOutlinePaint().setColor(context.getResources().getColor(R.color.zone_blue, null));
-                polygon.getOutlinePaint().setStrokeWidth(0);
-                map.getOverlays().add(polygon);
-                mZones.add(polygon);
-            }
-        }
-    }
-
-    private static ArrayList<GeoPoint> getGeoPoints(NvdbGeoflowZone zone) {
-        ArrayList<GeoPoint> geoPoints = new ArrayList<>();
-        for (NvdbPoint point : zone.polygon) {
-            geoPoints.add(new GeoPoint(point.latitude, point.longitude));
-        }
-        return geoPoints;
-    }
-
-    public static void clearZones(MapView map) {
-        for (Polygon polygon : mZones) {
-            map.getOverlays().remove(polygon);
-        }
     }
 
     public static void drawRoute(Context context, MapView map, IMapController mapController, ArrayList<GeoPoint> routePoints) {
