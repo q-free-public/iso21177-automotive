@@ -39,6 +39,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
         sourceCompatibility = JavaVersion.VERSION_1_8
     }
+    namespace 'com.qfree.its.iso21177poc'
 
 }
 
