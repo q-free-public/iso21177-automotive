@@ -29,17 +29,6 @@ public class UiUtils {
 
     public static void updateUiFieldsMobile(Activity activity, UiFields uiFields) throws Exception {
         if (activity instanceof MainActivity) {
-            //Log file upload
-            if (uiFields.getLogFileUploadEvent() != null) {
-                LogFilePostEvent logFilePostEvent = uiFields.getLogFileUploadEvent();
-                TextView lastUpload = activity.findViewById(R.id.value_upload_date);
-                lastUpload.setText(LogFormatStrings.dateFormat.format(logFilePostEvent.getDate()));
-                TextView topic = activity.findViewById(R.id.value_upload_topic);
-                topic.setText(logFilePostEvent.getUploadTopic());
-                TextView code = activity.findViewById(R.id.value_upload_code);
-                code.setText(String.valueOf(logFilePostEvent.getResponseCode()));
-            }
-
             //Location
             if (uiFields.getPosition() != null) {
                 Position position = uiFields.getPosition();
@@ -64,19 +53,6 @@ public class UiUtils {
                 TextView prot = activity.findViewById(R.id.value_location_prot);
                 prot.setText(String.format(locale, "%.2f", position.getHorizontalProtectionLimit()));
             }
-
-            //TollCostUpdate
-            if (uiFields.getTollCostUpdate() != null) {
-                GeoFlowWsApiEventTollCostUpdate tollCostUpdate = uiFields.getTollCostUpdate();
-                TextView zone = activity.findViewById(R.id.value_tolling_zone);
-                zone.setText(tollCostUpdate.zoneName);
-                TextView zoneCostPrKm = activity.findViewById(R.id.value_tolling_costPrKm);
-                zoneCostPrKm.setText(String.format(locale, "%.2f", tollCostUpdate.costPrKm));
-                TextView distance = activity.findViewById(R.id.value_tolling_distance);
-                distance.setText(String.format(locale, "%.2f", tollCostUpdate.distanceKm));
-                TextView cost = activity.findViewById(R.id.value_tolling_cost);
-                cost.setText(String.format(locale, "%.2f", tollCostUpdate.cost));
-            }
         }
     }
 
@@ -84,8 +60,6 @@ public class UiUtils {
     public static Pane.Builder updateUiFieldsAutomotive(CarContext carContext, UiFields uiFields) throws Exception {
         Row carInfo = new Row.Builder().setTitle("Car Info").build();
         Row location = new Row.Builder().setTitle("Location").build();
-        Row thinClient = new Row.Builder().setTitle("File Logger").build();
-        Row thickClient = new Row.Builder().setTitle("Tolling").build();
 
         //Car info
         String carName = null;
@@ -162,90 +136,8 @@ public class UiUtils {
 //                            pos.getHorizontalProtectionLimit())).build();
         }
 
-        //Toll info
-        String zone = null;
-        double costPrKm = 0.0;
-        String currency = null;
-        double distanceKm = 0.0;
-        double cost = 0.0;
-        if (uiFields.getTollCostUpdate() != null) {
-            GeoFlowWsApiEventTollCostUpdate tollUpdate = uiFields.getTollCostUpdate();
-            zone = tollUpdate.zoneName;
-            costPrKm = tollUpdate.costPrKm;
-            currency = tollUpdate.costCurrency;
-            distanceKm = tollUpdate.distanceKm;
-            cost = tollUpdate.cost;
-        }
-        String invoiceFrom = null;
-        String invoiceTo = null;
-        double amount = 0.0;
-        if (uiFields.getInvoiceSummary() != null) {
-            GeoFlowInvoiceSummary invoiceSummary = uiFields.getInvoiceSummary();
-            if (invoiceSummary.fromDate == null) {
-                invoiceFrom = "null";
-            } else {
-                invoiceFrom = invoiceSummary.fromDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            if (invoiceSummary.toDate == null) {
-                invoiceTo = "null";
-            } else {
-                invoiceTo = invoiceSummary.toDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            amount = invoiceSummary.amount;
-        }
-
-        thickClient = new Row.Builder().setTitle("Tolling")
-                .addText(String.format(Locale.ROOT,
-                        "Zone: %s (%.2f %s/km) Dist: %.2f km Cost: %.2f %s " +
-                                "Ended: %s Amount: %.2f %s",
-                        zone, costPrKm, currency, distanceKm, cost, currency,
-                        invoiceTo, amount, currency
-                )).build();
-
-        //Log file upload
-        if (uiFields.getLogFileUploadEvent() != null) {
-            LogFilePostEvent postEvent = uiFields.getLogFileUploadEvent();
-            thinClient = new Row.Builder().setTitle("File Logger")
-                    .addText(String.format(Locale.ROOT,
-                            "Down: %d/%d Up: %d/%d Last: %s " +
-                                    "RespCode: %d\n" +
-                                    "File: %s " +
-                                    "Size: %d",
-                            uiFields.getLogFileDownloadErrorCount(),
-                            uiFields.getLogFileDownloadOkCount(),
-                            uiFields.getLogFileUploadErrorCount(),
-                            uiFields.getLogFileUploadOkCount(),
-                            LogFormatStrings.dateFormatShorterTime.format(postEvent.getDate()),
-                            postEvent.getResponseCode(),
-                            postEvent.getUploadTopic().substring(Config.FILE_UPLOAD_EVENT_TOPIC.length()+1),
-                            postEvent.getContentLength()
-                    )).build();
-        } else {
-            thinClient = new Row.Builder().setTitle("Communication")
-                    .addText(String.format(Locale.ROOT,
-                            "Err: %d Ok: %d\n%s",
-                            uiFields.getLogFileUploadErrorCount(),
-                            uiFields.getLogFileUploadOkCount(),
-                            uiFields.getLogFileUploadErrorText()
-                    )).build();
-        }
-
-        //Excluded: exceed info limitations on screen
-//      Row error = new Row.Builder().setTitle("Error").build();
-        if (uiFields.getExceptionMsg() != null) {
-//            error = new Row.Builder().setTitle("Error")
-//                    .addText(String.format(Locale.ROOT,
-//                            "Exception: %s",
-//                            uiFields.getExceptionMsg()
-//                    )).build();
-        }
-
         return new Pane.Builder()
                 .addRow(carInfo)
-                .addRow(location)
-//                .addRow(locationMeta)
-                .addRow(thickClient)
-//                .addRow(error)
-                .addRow(thinClient);
+                .addRow(location);
     }
 }

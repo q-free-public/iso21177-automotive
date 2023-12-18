@@ -19,26 +19,6 @@ public class LogFilePostThread extends Thread {
 
     Thread mLogFileThread;
 
-    public LogFilePostThread(String uploadPath, Handler handler, long timeout) {
-        this.mLogFileThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                TrafficStats.setThreadStatsTag(0);
-                while (true) {
-                    try {
-                        Thread.sleep(timeout);
-                        Log.d(TAG, "Try to zip and post log file tmo=" + timeout);
-                        FileLogger.zipAndPostLogFile(uploadPath, handler);
-                        break;
-                    } catch (Exception e) {
-                        FileLogger.log("FileUploadError: " + e.getClass().getName() + ": " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-    }
-
     public static void doPost(String urlStr, byte[] content, HashMap<String, String> requestProperties,
                               String curUploadTopic, Handler handler) throws Exception {
         Log.d(TAG, "doPost: URL: " + urlStr + "  size=" + content.length);

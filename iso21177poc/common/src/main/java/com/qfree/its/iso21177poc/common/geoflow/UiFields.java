@@ -2,12 +2,6 @@ package com.qfree.its.iso21177poc.common.geoflow;
 
 import android.content.SharedPreferences;
 
-import androidx.car.app.hardware.info.EnergyLevel;
-import androidx.car.app.hardware.info.EnergyProfile;
-import androidx.car.app.hardware.info.Mileage;
-import androidx.car.app.hardware.info.Model;
-import androidx.car.app.hardware.info.Speed;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -17,9 +11,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.qfree.geoflow.toll.api.GeoFlowInvoiceSummary;
-import com.qfree.geoflow.toll.api.GeoFlowWsApiEventTollCostUpdate;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFilePostEvent;
 import com.qfree.its.location.Position;
 
 import java.lang.reflect.Type;
@@ -30,25 +21,16 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.TimeZone;
 
+import androidx.car.app.hardware.info.Model;
+import androidx.car.app.hardware.info.Speed;
+
 public class UiFields {
     private QfreePosImpl position;
-    private LogFilePostEvent logFilePostEvent;
-    private GeoFlowWsApiEventTollCostUpdate tollCostUpdate;
     private String exceptionMsg;
     private Model carModel;
-    private EnergyProfile carEnergyProfile;
     private Speed carSpeed;
-    private EnergyLevel carEnergyLevel;
-    private Mileage carMileage;
     private String vin;
-    private GeoFlowInvoiceSummary invoiceSummary;
     private long posCnt = -1;
-    private long logFileUploadOkCount = 0;
-    private long logFileUploadErrorCount = 0;
-    private String logFileUploadErrorText = "";
-    private long logFileDownloadOkCount = 0;
-    private long logFileDownloadErrorCount = 0;
-    private String logFileDownloadErrorText = "";
 
     public void saveAsPreference(SharedPreferences sharedPreferences) {
         Gson gson = new GsonBuilder().
@@ -71,68 +53,8 @@ public class UiFields {
         return uiFields;
     }
 
-    public static void clearUiFieldsFromPreference(SharedPreferences sharedPreferences) {
-        sharedPreferences.edit().remove(PreferenceKey.UI_FIELDS).apply();
-    }
-
-    public LogFilePostEvent getLogFileUploadEvent() {
-        return logFilePostEvent;
-    }
-
-    public void setLogFileUploadErrorIncrement(String lastError) {
-        logFileUploadErrorCount++;
-        logFileUploadErrorText = lastError;
-    }
-
-    public void setLogFileUploadOkIncrement() {
-        logFileUploadOkCount++;
-        logFileUploadErrorText = "";
-    }
-
-    public void setLogFileDownloadErrorIncrement(String lastError) {
-        logFileDownloadErrorCount++;
-        logFileDownloadErrorText = lastError;
-    }
-
-    public void setLogFileDownloadOkIncrement() {
-        logFileDownloadOkCount++;
-        logFileDownloadErrorText = "";
-    }
-
-    public long getLogFileUploadOkCount() {
-        return logFileUploadOkCount;
-    }
-
-    public long getLogFileUploadErrorCount() {
-        return logFileUploadErrorCount;
-    }
-
-    public String getLogFileUploadErrorText() {
-        return logFileUploadErrorText;
-    }
-
-    public long getLogFileDownloadOkCount() {
-        return logFileDownloadOkCount;
-    }
-
-    public long getLogFileDownloadErrorCount() {
-        return logFileDownloadErrorCount;
-    }
-
-    public String getLogFileDownloadErrorText() {
-        return logFileDownloadErrorText;
-    }
-
     public Position getPosition() {
         return position;
-    }
-
-    public GeoFlowWsApiEventTollCostUpdate getTollCostUpdate() {
-        return tollCostUpdate;
-    }
-
-    public void setLogFileUploadEvent(LogFilePostEvent logFilePostEvent) {
-        this.logFilePostEvent = logFilePostEvent;
     }
 
     public void setPosition(QfreePosImpl position, long cnt) {
@@ -144,16 +66,8 @@ public class UiFields {
         return posCnt;
     }
 
-    public void setTollCostUpdate(GeoFlowWsApiEventTollCostUpdate tollCostUpdate) {
-        this.tollCostUpdate = tollCostUpdate;
-    }
-
     public String getExceptionMsg() {
         return exceptionMsg;
-    }
-
-    public void setExceptionMsg(String exceptionMsg) {
-        this.exceptionMsg = exceptionMsg;
     }
 
     public Model getCarModel() {
@@ -164,14 +78,6 @@ public class UiFields {
         this.carModel = carModel;
     }
 
-    public EnergyProfile getCarEnergyProfile() {
-        return carEnergyProfile;
-    }
-
-    public void setCarEnergyProfile(EnergyProfile carEnergyProfile) {
-        this.carEnergyProfile = carEnergyProfile;
-    }
-
     public Speed getCarSpeed() {
         return carSpeed;
     }
@@ -180,36 +86,12 @@ public class UiFields {
         this.carSpeed = carSpeed;
     }
 
-    public EnergyLevel getCarEnergyLevel() {
-        return carEnergyLevel;
-    }
-
-    public void setCarEnergyLevel(EnergyLevel carEnergyLevel) {
-        this.carEnergyLevel = carEnergyLevel;
-    }
-
-    public Mileage getCarMileage() {
-        return carMileage;
-    }
-
-    public void setCarMileage(Mileage carMileage) {
-        this.carMileage = carMileage;
-    }
-
     public String getVin() {
         return vin;
     }
 
     public void setVin(String vin) {
         this.vin = vin;
-    }
-
-    public void setInvoiceSummary(GeoFlowInvoiceSummary invoiceSummary) {
-        this.invoiceSummary = invoiceSummary;
-    }
-
-    public GeoFlowInvoiceSummary getInvoiceSummary() {
-        return invoiceSummary;
     }
 
     private static class LocalDateTimeSerializer implements JsonSerializer<LocalDateTime> {

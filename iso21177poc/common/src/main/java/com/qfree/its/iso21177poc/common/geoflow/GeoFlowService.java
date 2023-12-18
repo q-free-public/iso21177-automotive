@@ -13,17 +13,14 @@ import android.os.Process;
 import android.os.StrictMode;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-import androidx.lifecycle.DefaultLifecycleObserver;
-
-import com.qfree.its.iso21177poc.common.BuildConfig;
-import com.qfree.geoflow.toll.api.GeoFlowUserRecord;
-import com.qfree.geoflow.toll.api.GeoFlowVehicleRecord;
 import com.qfree.geoflow.toll.api.HmiOption;
+import com.qfree.its.iso21177poc.common.BuildConfig;
 import com.qfree.its.iso21177poc.common.car.CarPropertyClient;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.FileLogger;
 import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogEvents;
-import com.qfree.its.iso21177poc.common.geoflow.thin_client.LogFilePostThread;
+
+import androidx.annotation.Nullable;
+import androidx.lifecycle.DefaultLifecycleObserver;
 
 public class GeoFlowService extends Service implements DefaultLifecycleObserver {
     private final static String TAG = GeoFlowService.class.getSimpleName();

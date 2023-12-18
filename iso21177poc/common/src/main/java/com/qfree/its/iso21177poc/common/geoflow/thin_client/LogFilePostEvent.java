@@ -8,14 +8,7 @@ public class LogFilePostEvent {
     private String uploadTopic;
     private int contentLength;
 
-    public LogFilePostEvent(int code, String topic) {
-        this.date = LocalDateTime.now();
-        this.responseCode = code;
-        this.uploadTopic = topic;
-    }
-
     public LogFilePostEvent() {
-
     }
 
     public void setDate(LocalDateTime date) {

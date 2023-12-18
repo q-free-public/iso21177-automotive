@@ -34,24 +34,13 @@ public class EventHandler extends Handler {
     //Topics:
     public static final int LOCATION_UPDATE_EVENT_MSG = 100;
     public static final int FILE_UPLOAD_EVENT_MSG = 200;
-    public static final int ZONE_RULES_DOWNLOAD_EVENT_MSG = 300;
     public static final int EXCEPTION_EVENT_MSG = 400;
     public static final int CAR_MODEL_DATA_EVENT_MSG = 500;
     public static final int CAR_ENERGY_PROFILE_DATA_EVENT_MSG = 501;
     public static final int CAR_SPEED_DATA_EVENT_MSG = 502;
-    public static final int CAR_ENERGY_LEVEL_DATA_EVENT_MSG = 503;
-    public static final int CAR_MILEAGE_DATA_EVENT_MSG = 504;
-    public static final int CAR_GYRO_DATA_EVENT_MSG = 600;
-    public static final int CAR_COMPASS_DATA_EVENT_MSG = 601;
     public static final int CAR_HW_LOCATION_DATA_EVENT_MSG = 602;
-    public static final int CAR_ACCELEROMETER_DATA_EVENT_MSG = 603;
-    public static final int ACCOUNT_CREATED_EVENT_MSG = 700;
-    public static final int CAR_PROPERTY_IGNITION_STATE_EVENT_MSG = 800;
-    public static final int CAR_PROPERTY_GEAR_SELECTION_EVENT_MSG = 801;
     public static final int CAR_PROPERTY_VIN_INFO_EVENT_MSG = 802;
     public static final int CAR_PROPERTY_VEHICLE_SPEED_EVENT_MSG = 803;
-    public static final int CAR_PROPERTY_ODOMETER_EVENT_MSG = 804;
-    public static final int THICK_CLIENT_UPLOAD_EVENT_MSG = 900;
 
     private final Context mContext;
     private final SharedPreferences mSharedPreferences;

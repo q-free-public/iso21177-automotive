@@ -10,7 +10,6 @@ public class LogFormatStrings {
 	public static final DateTimeFormatter  dateFormatShortTime;
 	public static final DateTimeFormatter  dateFormatShorterTime;
 	public static final DateTimeFormatter  obs__dateFormatStd;
-
 	public static final DateTimeFormatter dateFormatLong;
 
 	static {
