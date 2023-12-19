@@ -129,10 +129,14 @@ public class EventHandler extends Handler {
     }
 
     public static TripSummary getTripSummary() {
+        if (mTripSummary == null)
+            mTripSummary = new TripSummary();
         return mTripSummary.minus(mTripZero);
     }
 
     public static void clearTripSummary() {
+        if (mTripSummary == null)
+            mTripSummary = new TripSummary();
         mTripZero = mTripSummary.clone();
         mTripSummary.clearRoute();
     }

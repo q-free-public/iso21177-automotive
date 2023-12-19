@@ -95,7 +95,7 @@ public class GeoFlowCarAppService extends CarAppService implements DefaultLifecy
 //                  getCarContext().getCarService(ScreenManager.class).push(new TollInfoScreen(getCarContext()));
 
                     if (true) {
-                        FileLogger.log("Launch MapActivity from PARK");
+                        Log.d(TAG, "Launch MapActivity from PARK");
                         Intent launchMapActivityIntent = new Intent(getCarContext(), MapActivity.class);
                         launchMapActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
                         getCarContext().startActivity(launchMapActivityIntent);

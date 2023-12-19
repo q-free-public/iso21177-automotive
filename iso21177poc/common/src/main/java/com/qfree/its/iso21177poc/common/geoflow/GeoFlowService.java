@@ -38,9 +38,9 @@ public class GeoFlowService extends Service implements DefaultLifecycleObserver 
         FileLogger.log("GeoFlowService.onCreate");
         try {
             if (BuildConfig.DEBUG) {
-                StrictMode.enableDefaults();
-                StrictMode.allowThreadDiskReads();
-                StrictMode.allowThreadDiskWrites();
+//                StrictMode.enableDefaults();
+//                StrictMode.allowThreadDiskReads();
+//                StrictMode.allowThreadDiskWrites();
             }
 
             HandlerThread thread = new HandlerThread("ServiceStartArguments", Process.THREAD_PRIORITY_BACKGROUND);
