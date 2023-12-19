@@ -15,8 +15,6 @@ public class GeoFlowServiceNotification {
     private static final String CHANNEL_ID = "LOCATION_SERVICE_NOTIFICATION_CHANNEL";
     private static final int NOTIFICATION_ID = 1;
 
-
-    //TODO: Must consider car usage
     public static NotificationCompat.Builder buildNotification(Context context){
         Intent notificationIntent = new Intent(context, GeoFlowService.class);//new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
@@ -41,5 +39,4 @@ public class GeoFlowServiceNotification {
         notificationManager.notify(NOTIFICATION_ID, notification);
         return notification;
     }
-
 }

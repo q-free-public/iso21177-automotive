@@ -103,11 +103,11 @@ public class MapActivity extends AppCompatActivity {
         TripSummary mTripSummary = EventHandler.getTripSummary();
         if (mTripSummary != null) {
             OsmdroidUtils.drawRoute(getApplicationContext(), mMapView, mMapController, mTripSummary.getTripRoute());
-            mTollCost.setText(getString(R.string.toll_cost, mTripSummary.getTripCost(), mTripSummary.getCurrency()));
+            mTollCost.setText("X" + getString(R.string.toll_cost, mTripSummary.getTripCost(), mTripSummary.getCurrency()));
             mTollDistance.setText(getString(R.string.toll_distance, mTripSummary.getTripDistance(), "km"));
         } else {
             OsmdroidUtils.clearAll(mMapView);
-            mTollCost.setText("");
+            mTollCost.setText("abc");
             mTollDistance.setText("");
         }
     }

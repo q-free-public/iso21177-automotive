@@ -12,10 +12,8 @@ public class LocationUtils {
         qfreePos.setHeight(l.getAltitude());
         qfreePos.setHeading(l.getBearing());
         qfreePos.setVelocity(l.getSpeed());
-        qfreePos.setSatelliteCount((l.getExtras() != null ?
-                l.getExtras().getInt("satellites") : 0));
-        qfreePos.setHdop((l.getAccuracy() < 5.0 ?
-                1 : 5));
+        qfreePos.setSatelliteCount((l.getExtras() != null ? l.getExtras().getInt("satellites") : 0));
+        qfreePos.setHdop((l.getAccuracy() < 5.0 ? 1 : 5));
         qfreePos.setHorizontalProtectionLimit(l.getAccuracy() * 4);
         double[] arr = new double[9];
         arr[0] = l.getAccuracy() * l.getAccuracy();
