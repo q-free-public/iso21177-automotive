@@ -20,6 +20,9 @@ public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
     }
 
     public native String stringFromJNI();
+    public native String unameMachine();
+    public native String unameVersion();
+    public native String unameRelease();
 
     @Override
     protected void onPreExecute() {
@@ -34,6 +37,9 @@ public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
         Log.d(TAG, "Calling C++ code");
         String txt = stringFromJNI();
         Log.d(TAG, "C++ ret: " + txt);
+        Log.d(TAG, "C++ uname version: " + unameVersion());
+        Log.d(TAG, "C++ uname machine: " + unameMachine());
+        Log.d(TAG, "C++ uname release: " + unameRelease());
 
         try {
             URL url = new URL("https://its1.q-free.com/geoserver/all.json");

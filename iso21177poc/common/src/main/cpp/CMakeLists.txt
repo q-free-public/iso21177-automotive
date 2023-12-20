@@ -12,6 +12,13 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("common")
 
+add_definitions(-DOML_SYM=1)
+add_definitions(-DOPENSSL_BUILDING_OPENSSL)
+add_definitions(-DNDEBUG)
+add_definitions(-DOPENSSL_USE_NODELETE)
+add_definitions(-DL_ENDIAN)
+add_definitions(-DOPENSSL_PIC)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -27,7 +34,7 @@ project("common")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
-    common.cpp)
+        cpp-test.cpp)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
