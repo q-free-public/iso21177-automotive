@@ -15,6 +15,12 @@ import java.util.Scanner;
 public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
     final public static String TAG = "DatexFetchHttp";
 
+    static {
+       System.loadLibrary("common");
+    }
+
+    public native String stringFromJNI();
+
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
@@ -24,6 +30,10 @@ public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
     @Override
     protected String doInBackground(Void... params) {
         Log.d(TAG, "doInBackground");
+
+        Log.d(TAG, "Calling C++ code");
+        String txt = stringFromJNI();
+        Log.d(TAG, "C++ ret: " + txt);
 
         try {
             URL url = new URL("https://its1.q-free.com/geoserver/all.json");

@@ -8,6 +8,11 @@ android {
     defaultConfig {
         minSdk 29
         targetSdk 34
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
     }
 
     buildTypes {
@@ -21,6 +26,12 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     namespace 'com.qfree.its.iso21177poc.common'
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
 }
 
 dependencies {

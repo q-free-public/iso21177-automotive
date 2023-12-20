@@ -1,5 +1,9 @@
 package com.qfree.its.iso21177poc.common.app;
 
+//
+// https://osmdroid.github.io/osmdroid/How-to-use-the-osmdroid-library.html
+//
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
