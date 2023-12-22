@@ -23,6 +23,8 @@ public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
     public native String unameMachine();
     public native String unameVersion();
     public native String unameRelease();
+    public native String testParams(String strParam, long l);
+    public native long add(long a, long b);
 
     @Override
     protected void onPreExecute() {
@@ -40,6 +42,14 @@ public class DatexFetchHttp extends AsyncTask<Void, Void, String> {
         Log.d(TAG, "C++ uname version: " + unameVersion());
         Log.d(TAG, "C++ uname machine: " + unameMachine());
         Log.d(TAG, "C++ uname release: " + unameRelease());
+        Log.d(TAG, "C++ testParams: " + testParams("ola", 42));
+        Log.d(TAG, "C++ add(10000,10): " + add(10000, 10));
+
+        Rfc8902 rfc8902 = new Rfc8902();
+        Log.d(TAG, "C++ OpensslVersion: " + rfc8902.getOpensslVersion());
+        int ret = rfc8902.client();
+        Log.d(TAG, "C++ RFC8902  ret=: " + ret);
+        if (ret != 99) return null;
 
         try {
             URL url = new URL("https://its1.q-free.com/geoserver/all.json");

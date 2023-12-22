@@ -1752,6 +1752,7 @@ int SSL_accept(SSL *s)
 
 int SSL_connect(SSL *s)
 {
+    extern void ola(const char*fn,int ln,const char*txt); ola(__FILE__,__LINE__,"try SSL_connect");
     if (s->handshake_func == NULL) {
         /* Not properly initialized yet */
         SSL_set_connect_state(s);
@@ -3916,6 +3917,7 @@ static int ssl_do_handshake_intern(void *vargs)
 int SSL_do_handshake(SSL *s)
 {
     int ret = 1;
+    extern void ola(const char*fn,int ln,const char*txt); ola(__FILE__,__LINE__,"SSL_do_handshake");
 
     if (s->handshake_func == NULL) {
         ERR_raise(ERR_LIB_SSL, SSL_R_CONNECTION_TYPE_NOT_SET);
@@ -3934,8 +3936,10 @@ int SSL_do_handshake(SSL *s)
             args.s = s;
 
             ret = ssl_start_async_job(s, &args, ssl_do_handshake_intern);
+            ola(__FILE__,__LINE__,"ssl_start_async_job done");
         } else {
             ret = s->handshake_func(s);
+            ola(__FILE__,__LINE__,"s->handshake_func done");
         }
     }
     return ret;

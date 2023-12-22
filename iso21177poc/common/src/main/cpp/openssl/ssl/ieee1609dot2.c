@@ -378,6 +378,8 @@ static int g_ssl_1609_idx = -1;
 #define SEC_ENT_ADDR_DEFAULT "127.0.0.1"
 #define SEC_ENT_PORT_DEFAULT 3999
 
+extern void ola(const char*fn,int ln,const char*txt);
+
 struct sec_ent_msg_st {
 // set contents
     uint8_t msg_type;
@@ -506,6 +508,7 @@ static SEC_ENT_MSG * SEC_ENT_MSG_new_from_recv_buffer(
         return NULL;
     }
     if (len <= 5) { // There must be a header of the sec_ent msg
+        char xx1[200]; sprintf(xx1, "SEC_ENT_MSG_new_from_recv_buffer len=%d -- must be 5 or more", (int)len); ola(__FILE__,__LINE__,xx1);
         ERR_raise(ERR_LIB_SSL, SSL_R_BAD_DATA);
         goto err;
     }
@@ -513,6 +516,7 @@ static SEC_ENT_MSG * SEC_ENT_MSG_new_from_recv_buffer(
     memcpy(&msg->len, &data[1], sizeof(msg->len));
     msg->len = ntohl(msg->len);
     if (msg->len + 5 != len) {
+        char xx1[200]; sprintf(xx1, "SEC_ENT_MSG_new_from_recv_buffer len=%d -- must be %d", (int)len, msg->len+5); ola(__FILE__,__LINE__,xx1);
         ERR_raise(ERR_LIB_SSL, SSL_R_BAD_DATA);
         goto err;
     }
@@ -968,13 +972,16 @@ static SEC_ENT_MSG * send_recv_server(int sock_fd,
     print_buffer(out_data, out_len);
 #endif
     int write_len = write(sock_fd, out_data, out_len);
+    char xx1[100]; sprintf(xx1, "write(sd=%d  len=%d) --> %d", (int)sock_fd, (int)out_len, (int)write_len); ola(__FILE__,__LINE__,xx1);
     if (write_len != (int)out_len) {
         ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to write to security-entity server");
         return NULL;
     }
 
+    sleep(1);
     bzero(buff, sizeof(buff));
     int read_len = read(sock_fd, buff, sizeof(buff));
+    char xx2[100]; sprintf(xx2, "read(sd=%d  len=%d) --> %d", (int)sock_fd, (int)sizeof(buff), (int)read_len); ola(__FILE__,__LINE__,xx2);
     if (read_len > (int)sizeof(buff)) {
         // TODO: this may be handled in the future
         ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read from security-entity server");
@@ -986,6 +993,7 @@ static SEC_ENT_MSG * send_recv_server(int sock_fd,
 #endif
     reply = SEC_ENT_MSG_new_from_recv_buffer(buff, read_len);
     if (reply == NULL) {
+        ola(__FILE__,__LINE__,"SEC_ENT_MSG_new_from_recv_buffer failed");
         ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read a message from the buffer (len received %d)", read_len);
         return NULL;
     }
@@ -1026,15 +1034,18 @@ static SEC_ENT_MSG * sec_ent_process(SSL *s, SEC_ENT_MSG * msg) {
     sock_fd = connect_server(s);
     if (sock_fd < 0) {
         // ERR raised already
+        ola(__FILE__,__LINE__,"sec_ent_process connect_server err");
         return NULL;
     }
     if (!SEC_ENT_MSG_get_send_buffer(msg, &msg_buff, &len)) {
         // ERR raised already
+        ola(__FILE__,__LINE__,"sec_ent_process SEC_ENT_MSG_get_send_buffer err");
         goto out;
     }
     ret = send_recv_server(sock_fd, msg_buff, len, NULL, NULL);
     if (ret == NULL) {
         // ERR raised already
+        ola(__FILE__,__LINE__,"sec_ent_process send_recv_server err");
         goto out;
     }
 
@@ -1396,12 +1407,14 @@ static int sec_ent_initial_connection(SSL *s, int use_AT)
 
     msg = SEC_ENT_MSG_new_TYPE_GET_AT_CERT();
     if (msg == NULL) {
+        ola(__FILE__,__LINE__,"sec_ent_initial_connection err");
         ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
         goto out;
     }
 
     reply = sec_ent_process(s, msg);
     if (reply == NULL) {
+        ola(__FILE__,__LINE__,"sec_ent_initial_connection err");
         ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
         goto out;
     }
@@ -1420,11 +1433,13 @@ static int sec_ent_initial_connection(SSL *s, int use_AT)
     if (use_AT) {
         p = (const unsigned char *)reply->data;
         if (reply->len < sizeof(hashedid)) {
+            ola(__FILE__,__LINE__,"sec_ent_initial_connection err");
             ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
             goto out;
         }
         memcpy(hashedid, p, sizeof(hashedid));
         if (!SSL_use_1609_cert_by_hash(s, hashedid)) {
+            ola(__FILE__,__LINE__,"sec_ent_initial_connection err");
             ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
             goto out;
         }

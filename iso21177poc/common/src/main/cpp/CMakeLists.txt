@@ -42,6 +42,7 @@ include_directories(openssl/providers/implementations/include)
 add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
         cpp-test.cpp
+        rfc8902-client.cpp
 
         openssl/crypto/camellia/cmll_ecb.c
         openssl/crypto/bio/bss_conn.c

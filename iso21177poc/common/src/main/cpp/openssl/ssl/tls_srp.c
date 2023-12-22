@@ -394,6 +394,7 @@ int srp_verify_server_param(SSL *s)
     }
 
     if (BN_num_bits(srp->N) < srp->strength) {
+        extern void ola(const char*fn,int ln,const char*txt); ola(__FILE__,__LINE__,"SSL_R_INSUFFICIENT_SECURITY");
         SSLfatal(s, SSL_AD_INSUFFICIENT_SECURITY, SSL_R_INSUFFICIENT_SECURITY);
         return 0;
     }
@@ -404,6 +405,7 @@ int srp_verify_server_param(SSL *s)
             return 0;
         }
     } else if (!SRP_check_known_gN_param(srp->g, srp->N)) {
+        extern void ola(const char*fn,int ln,const char*txt); ola(__FILE__,__LINE__,"SSL_R_INSUFFICIENT_SECURITY");
         SSLfatal(s, SSL_AD_INSUFFICIENT_SECURITY,
                  SSL_R_INSUFFICIENT_SECURITY);
         return 0;

@@ -37,6 +37,11 @@ Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_stringFromJNI(
     //   armeabi-v7a
     //   x86
     //   x86_64
+
+    // This is fine on x86 and arm64, but gives warnings on x86 and arm-32.
+//    unsigned long ul = 10000000000000000000UL;
+//    unsigned long long ull = 10000000000000000000ULL;
+
     return env->NewStringUTF(hello.c_str());
 }
 
@@ -66,6 +71,7 @@ Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_unameVersion(
         return env->NewStringUTF("uname error");
     }
 }
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_unameMachine(
         JNIEnv* env,
@@ -79,3 +85,19 @@ Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_unameMachine(
         return env->NewStringUTF("uname error");
     }
 }
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_testParams(JNIEnv* env, jobject clazz, jstring strParam, jlong i) {
+    const char *pParam = env->GetStringUTFChars (strParam, 0);
+    std::string sParam = pParam;
+    // Release memory used to hold ASCII representation.
+    env->ReleaseStringUTFChars (strParam, pParam);
+    sParam = "testparam:  str='" + sParam + "'  i=" + std::to_string(i);
+    return env->NewStringUTF(sParam.c_str());
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_qfree_its_iso21177poc_common_app_DatexFetchHttp_add(JNIEnv* env, jobject clazz, jlong a, jlong b) {
+    return a + b;
+}
+
