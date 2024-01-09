@@ -8,5 +8,6 @@ public class Rfc8902 {
     public native String getOpensslVersion();
     public native int setSecurityEntity(String seEntAddress, int seEntPort);
     public native int setHttpServer(String serverAddress, int serverPort);
-    public native int client();
+    public native int httpGet(String fileUrl);
+    public native String httpGetResponse();
 }

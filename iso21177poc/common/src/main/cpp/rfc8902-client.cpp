@@ -38,7 +38,7 @@ static char               optSecEntHost[200] = "46.43.3.150";
 static short unsigned int optSecEntPort = 3999;
 static char               optServerHost[200] = "46.43.3.150";
 static short unsigned int optServerPort = 8877;
-static const char        *optUrl = "/445.text";
+static std::string        http_get_response;
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getOpensslVersion(
@@ -109,7 +109,7 @@ static int ssl_recv_message(SSL *s, char * buff, size_t buff_len)
 {
     int processed = SSL_read(s, buff, buff_len);
     if (processed > 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: max:%d  ret:%d\n%.*s\n", (int) buff_len, processed, processed, buff);
+        // __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: max:%d  ret:%d\n%.*s\n", (int) buff_len, processed, processed, buff);
     } else {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: Error  ret:%d\n", processed);
     }
@@ -187,8 +187,10 @@ static std::string replace(std::string subject, const std::string& search, const
     return subject;
 }
 
-static bool client()
+static bool http_get(const std::string &file_url, std::string &response_str)
 {
+    response_str.clear();
+
     int client_socket = -1;
     SSL_CTX *ssl_ctx = 0;
     SSL *ssl = 0;
@@ -302,7 +304,7 @@ static bool client()
 
     // Send HTTP GET request
     char line[1024];
-    ssize_t ret_line_len = sprintf(line, "GET %s HTTP/1.1\r\n\r\n", optUrl);
+    ssize_t ret_line_len = snprintf(line, sizeof(line), "GET %s HTTP/1.1\r\nHost: %s:%d\r\n\r\n", file_url.c_str(), optServerHost, optServerPort);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Sending '%s'\n", replace(line, "\r\n", " CRLF ").c_str());
     if (ssl_send_message(ssl, line, ret_line_len) < 0) {
         SSL_free(ssl);
@@ -319,7 +321,7 @@ static bool client()
         int ssl_error = SSL_get_error(ssl, processed);
         ERR_print_errors_fp(stderr);
         if (ssl_error) {
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server finished sending data\n");
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server finished sending data (1)\n");
             //ERR_print_errors_fp(stderr);
         }
 
@@ -327,7 +329,7 @@ static bool client()
             int ssl_error = SSL_get_error(ssl, processed);
             //ERR_print_errors_fp(stderr);
             if (ssl_error == SSL_ERROR_ZERO_RETURN) {
-                __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server finished sending data\n");
+                __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server finished sending data (2)\n");
                 //ERR_print_errors_fp(stderr);
                 break;
             }
@@ -344,6 +346,7 @@ static bool client()
         remaining = headers.add_data(line, processed);
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client write finished. received %d bytes, Got %d surplus bytes (payload)\n", processed, (int)remaining.size());
     }
+    response_str += std::string((const char*)remaining.data(), remaining.size());
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Reply protocol:       %s\n", headers.get_reply_protocol().c_str());
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Reply status:         %d\n", headers.get_reply_status());
@@ -373,7 +376,8 @@ static bool client()
             if (len <= 0) break;
             totlen += len;
             loopcnt++;
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"looping %d %d\n", totlen, loopcnt);
+            //__android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"looping len:%d  totlen:%d  loopcnt:%d\n", len, totlen, loopcnt);
+            response_str += std::string(buff, len);
         }
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client received %d bytes in %d loops.  ContentLen was %d bytes\n", totlen, loopcnt, headers.get_content_length());
 
@@ -402,11 +406,21 @@ static bool client()
     return true;
 }
 
+
 extern "C" JNIEXPORT jint JNICALL
-Java_com_qfree_its_iso21177poc_common_app_Rfc8902_client(
-        JNIEnv* env,
-        jobject /* this */) {
-    int ret = client();
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_httpGet(JNIEnv* env, jobject clazz, jstring strFileUrl) {
+    const char *pFileUrl = env->GetStringUTFChars (strFileUrl, 0);
+    std::string sFileUrl = pFileUrl;
+    // Release memory used to hold ASCII representation.
+    env->ReleaseStringUTFChars (strFileUrl, pFileUrl);
+    int ret = http_get(sFileUrl, http_get_response);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "client c-code done %d", ret);
     return ret;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_httpGetResponse(
+        JNIEnv* env,
+        jobject /* this */) {
+    return env->NewStringUTF(http_get_response.c_str());
 }

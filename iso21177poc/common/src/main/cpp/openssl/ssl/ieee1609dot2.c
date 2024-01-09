@@ -497,6 +497,22 @@ static void SEC_ENT_MSG_free(SEC_ENT_MSG * msg) {
     }
 }
 
+static ssize_t SEC_ENT_MSG_parse_len_from_hdr_buffer(
+    const unsigned char * data, size_t len)
+{
+    if (len < SEC_ENT_MSG_HDR_LEN) { // There must be a header of the sec_ent msg
+        ERR_raise(ERR_LIB_SSL, SSL_R_BAD_DATA);
+        return -1;
+    }
+
+    SEC_ENT_MSG msg;
+    msg.msg_type = data[0];
+    memcpy(&msg.len, &data[1], sizeof(msg.len));
+    msg.len = ntohl(msg.len);
+
+    return msg.len;
+}
+
 static SEC_ENT_MSG * SEC_ENT_MSG_new_from_recv_buffer(
         const unsigned char * data, size_t len)
 {
@@ -507,7 +523,7 @@ static SEC_ENT_MSG * SEC_ENT_MSG_new_from_recv_buffer(
         ERR_raise(ERR_LIB_SSL, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
-    if (len <= 5) { // There must be a header of the sec_ent msg
+    if (len <= SEC_ENT_MSG_HDR_LEN) { // There must be a header of the sec_ent msg
         char xx1[200]; sprintf(xx1, "SEC_ENT_MSG_new_from_recv_buffer len=%d -- must be 5 or more", (int)len); ola(__FILE__,__LINE__,xx1);
         ERR_raise(ERR_LIB_SSL, SSL_R_BAD_DATA);
         goto err;
@@ -515,7 +531,7 @@ static SEC_ENT_MSG * SEC_ENT_MSG_new_from_recv_buffer(
     msg->msg_type = data[0];
     memcpy(&msg->len, &data[1], sizeof(msg->len));
     msg->len = ntohl(msg->len);
-    if (msg->len + 5 != len) {
+    if (msg->len + SEC_ENT_MSG_HDR_LEN != len) {
         char xx1[200]; sprintf(xx1, "SEC_ENT_MSG_new_from_recv_buffer len=%d -- must be %d", (int)len, msg->len+5); ola(__FILE__,__LINE__,xx1);
         ERR_raise(ERR_LIB_SSL, SSL_R_BAD_DATA);
         goto err;
@@ -949,11 +965,29 @@ static int connect_server(SSL *s) {
 
     // connect the client socket to server socket
     if (connect(sock_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
+        char xx2[200]; sprintf(xx2, "connect_server failure  errno=%d", errno); ola(__FILE__,__LINE__,xx2);
         ERR_raise(ERR_LIB_SSL, SSL_R_SEC_ENT_CONNECT_FAILED);
+        close(sock_fd);
         return -1;
     }
 
+    char xx1[200]; sprintf(xx1, "connect_server success"); ola(__FILE__,__LINE__,xx1);
     return sock_fd;
+}
+
+static ssize_t read_N_bytes(int sock_fd, size_t bytes_to_read, unsigned char ** buffer) {
+    ssize_t ret = 0;
+    while (bytes_to_read > 0 && ret >= 0) {
+        int read_len = read(sock_fd, *buffer, bytes_to_read);
+        char xx1[100]; sprintf(xx1, "read_N_bytes: read(sd=%d  len=%d) --> %d  errno=%d", (int)sock_fd, (int)bytes_to_read, (int)read_len, errno); ola(__FILE__,__LINE__,xx1);
+        if (read_len <= 0) {
+            return ret;
+        }
+        bytes_to_read -= read_len;
+        *buffer += read_len;
+        ret += read_len;
+    }
+    return ret;
 }
 
 static SEC_ENT_MSG * send_recv_server(int sock_fd,
@@ -971,33 +1005,60 @@ static SEC_ENT_MSG * send_recv_server(int sock_fd,
     fprintf(stderr, ">>> send_recv_server - request\n");
     print_buffer(out_data, out_len);
 #endif
-    int write_len = write(sock_fd, out_data, out_len);
-    char xx1[100]; sprintf(xx1, "write(sd=%d  len=%d) --> %d", (int)sock_fd, (int)out_len, (int)write_len); ola(__FILE__,__LINE__,xx1);
-    if (write_len != (int)out_len) {
-        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to write to security-entity server");
-        return NULL;
+    int bytes_to_write = out_len;
+    while (bytes_to_write > 0) {
+        int write_len = write(sock_fd, out_data, bytes_to_write);
+	    char xx1[100]; sprintf(xx1, "write(sd=%d  len=%d) --> %d", (int)sock_fd, (int)bytes_to_write, (int)write_len); ola(__FILE__,__LINE__,xx1);
+        if (write_len <= 0 ) {
+            ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to write to security-entity server");
+            return NULL;
+        }
+        bytes_to_write -= write_len;
+        out_data += write_len;
     }
 
-    sleep(1);
     bzero(buff, sizeof(buff));
-    int read_len = read(sock_fd, buff, sizeof(buff));
-    char xx2[100]; sprintf(xx2, "read(sd=%d  len=%d) --> %d", (int)sock_fd, (int)sizeof(buff), (int)read_len); ola(__FILE__,__LINE__,xx2);
-    if (read_len > (int)sizeof(buff)) {
+    unsigned char * read_ptr = buff;
+
+    ssize_t bytes_read = read_N_bytes(sock_fd, SEC_ENT_MSG_HDR_LEN, &read_ptr);
+    if (bytes_read != SEC_ENT_MSG_HDR_LEN) {
         // TODO: this may be handled in the future
-        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read from security-entity server");
+        char xx2[100]; sprintf(xx2, "read_N_bytes(sd=%d  len=%d) --> %d  ERROR", (int)sock_fd, (int)SEC_ENT_MSG_HDR_LEN, (int)bytes_read); ola(__FILE__,__LINE__,xx2);
+        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read header from security-entity server");
         return NULL;
     }
+    // header is now read
+
+    ssize_t msg_len = SEC_ENT_MSG_parse_len_from_hdr_buffer(buff, bytes_read);
+    if (msg_len < 0) {
+        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Too large message length security-entity server (len: %d)", msg_len);
+        return NULL;
+    }
+    if ((msg_len + SEC_ENT_MSG_HDR_LEN) > sizeof(buff)) {
+        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Too large message from security-entity server (len: %d)", msg_len);
+        return NULL;
+    }
+    bytes_read = read_N_bytes(sock_fd, msg_len, &read_ptr);
+    if (bytes_read != msg_len) {
+        // TODO: this may be handled in the future
+        char xx9[100]; sprintf(xx9, "read_N_bytes(sd=%d  len=%d) --> %d  ERROR", (int)sock_fd, (int)msg_len, (int)bytes_read); ola(__FILE__,__LINE__,xx9);
+        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read contents from security-entity server");
+        return NULL;
+    }
+    // message is now read
+
 #ifdef TLS_13_1609_DEBUG
     fprintf(stderr, ">>> send_recv_server - reply\n");
-    print_buffer(buff, read_len);
+    print_buffer(buff, (bytes_read + SEC_ENT_MSG_HDR_LEN));
 #endif
-    reply = SEC_ENT_MSG_new_from_recv_buffer(buff, read_len);
+    reply = SEC_ENT_MSG_new_from_recv_buffer(buff, bytes_read + SEC_ENT_MSG_HDR_LEN);
     if (reply == NULL) {
         ola(__FILE__,__LINE__,"SEC_ENT_MSG_new_from_recv_buffer failed");
-        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read a message from the buffer (len received %d)", read_len);
+        ERR_raise_data(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR, "Unable to read a message from the buffer (len received %d)", (bytes_read + SEC_ENT_MSG_HDR_LEN));
         return NULL;
     }
     if (reply->msg_type == SEC_ENT_MSG_TYPE_FAILURE) {
+        ola(__FILE__,__LINE__,"SEC_ENT_MSG_TYPE_FAILURE - SSL_R_UNEXPECTED_MESSAGE");
         ERR_raise(ERR_LIB_SSL, SSL_R_UNEXPECTED_MESSAGE);
         // if err string ends with \n change it to \0
         if (reply->data[reply->len - 1] == '\n') {
@@ -1020,6 +1081,7 @@ static SEC_ENT_MSG * send_recv_server(int sock_fd,
 
 static void disconnect_server(int sock_fd) {
     if (sock_fd > 0) {
+        ola(__FILE__,__LINE__,"disconnect_server");
         close(sock_fd);
         sock_fd = -1;
     }
@@ -1472,6 +1534,7 @@ int SSL_enable_RFC8902_support(SSL *s, int server_support, int client_support, i
 int SSL_set_1609_sec_ent_addr(SSL *s, int port, const char* addr) {
     SSL_IEEE1609 * ieee1609_state = NULL;
 
+    char xx1[200]; sprintf(xx1, "SSL_set_1609_sec_ent_addr addr=%s   port=%d", addr, port); ola(__FILE__,__LINE__,xx1);
     ieee1609_state = SSL_get_ex_data(s, g_ssl_1609_idx);
     strncpy(ieee1609_state->sec_ent_addr, addr, sizeof(ieee1609_state->sec_ent_addr) - 1);
     ieee1609_state->sec_ent_port = port;
