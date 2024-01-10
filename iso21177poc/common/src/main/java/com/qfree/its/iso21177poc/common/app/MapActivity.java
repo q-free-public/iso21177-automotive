@@ -8,6 +8,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -30,6 +32,7 @@ import org.osmdroid.views.overlay.OverlayItem;
 import java.util.ArrayList;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.os.HandlerCompat;
 
 public class MapActivity extends AppCompatActivity {
     private static final String TAG = MapActivity.class.getSimpleName();
@@ -39,8 +42,9 @@ public class MapActivity extends AppCompatActivity {
     private TextView mRow1;
     private TextView mRow2;
     ImageView imageView;
-    public static DatexReply datexReply = null;
-    public static int datexReplyCnt = 0;
+    private static DatexReply datexReply = null;
+    private static int datexReplyCnt = 0;
+    MapHandler mapThreadHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +56,9 @@ public class MapActivity extends AppCompatActivity {
 
             Context context = getApplicationContext();
             Configuration.getInstance().load(context, android.preference.PreferenceManager.getDefaultSharedPreferences(context));
+
+            mapThreadHandler = new MapHandler(context, Looper.getMainLooper(), this);
+
             setContentView(R.layout.activity_map);
 
             Log.d(TAG, "onCreate: finding MAP ");
@@ -72,8 +79,7 @@ public class MapActivity extends AppCompatActivity {
                     Log.d(TAG, "refreshBtn");
                     try {
                         populateTripView();
-                        new DatexFetchHttp().execute();
-                        addSigns();
+                        new DatexFetchHttp().execute(mapThreadHandler);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -111,6 +117,7 @@ public class MapActivity extends AppCompatActivity {
         if (datexReply == null || datexReply.signList == null)
             return;
 
+        Log.d(TAG, "addSigns: SignCnt=" + datexReply.signList.size());
         ArrayList<OverlayItem> items = new ArrayList<OverlayItem>();
         for (DatexVmsSign sign : datexReply.signList) {
             if (sign.isBlank)
@@ -152,6 +159,7 @@ public class MapActivity extends AppCompatActivity {
 
         mOverlay.setFocusItemsOnTap(true);
         mMapView.getOverlays().add(mOverlay);
+        mMapView.invalidate();
     }
 
     @Override
@@ -189,5 +197,23 @@ public class MapActivity extends AppCompatActivity {
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+    }
+
+    public void onDatexOk(DatexResponse obj) {
+        Log.d(TAG, "onDatexOk: HttpCode=" + obj.httpResponseCode + "  Status=" + obj.status + "  CertFam:" + obj.certificateFamily);
+        Log.d(TAG, "onDatexOk: DatexInfo:" + (obj.datexReply==null?"null":"ok") + "  SignCnt=" + ((obj.datexReply!= null && obj.datexReply.signList != null) ? obj.datexReply.signList.size() : 0));
+        datexReply = obj.datexReply;
+        datexReplyCnt++;
+        addSigns();
+    }
+
+    public void onDatexError(DatexResponse obj) {
+        Log.d(TAG, "onDatexError: HttpCode=" + obj.httpResponseCode + "  Status=" + obj.status + "  CertFam:" + obj.certificateFamily);
+        Log.d(TAG, "onDatexError: ErrorText=" + obj.errorText);
+        if (obj.exception != null)
+            Log.d(TAG, "onDatexError: Exception=" + obj.exception.getClass().getName() + ": " + obj.exception.getMessage());
+        else
+            Log.d(TAG, "onDatexError: Exception=null");
+        Log.d(TAG, "onDatexError: DatexInfo:" + (obj.datexReply==null?"null":"ok") + "  SignCnt=" + ((obj.datexReply!= null && obj.datexReply.signList != null) ? obj.datexReply.signList.size() : 0));
     }
 }

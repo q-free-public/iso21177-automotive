@@ -1533,13 +1533,21 @@ int SSL_enable_RFC8902_support(SSL *s, int server_support, int client_support, i
 
 int SSL_set_1609_sec_ent_addr(SSL *s, int port, const char* addr) {
     SSL_IEEE1609 * ieee1609_state = NULL;
+    int ret = 0;
 
     char xx1[200]; sprintf(xx1, "SSL_set_1609_sec_ent_addr addr=%s   port=%d", addr, port); ola(__FILE__,__LINE__,xx1);
     ieee1609_state = SSL_get_ex_data(s, g_ssl_1609_idx);
     strncpy(ieee1609_state->sec_ent_addr, addr, sizeof(ieee1609_state->sec_ent_addr) - 1);
     ieee1609_state->sec_ent_port = port;
 
-    return 1;
+    ret = sec_ent_initial_connection(s, 0);
+    if (ret == 0) {
+        ola(__FILE__, __LINE__, "sec_ent_initial_connection failed in SSL_set_1609_sec_ent_addr");
+    } else {
+        ola(__FILE__, __LINE__, "SSL_set_1609_sec_ent_addr successfully ping'ed security-entity");
+    }
+
+    return ret;
 }
 
 int SSL_get_1609_psid_received(SSL *s, uint64_t * const psid,

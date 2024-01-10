@@ -30,6 +30,27 @@ enum CertificateType {
 
 #define CERT_HASH_LEN 8
 
+#define ERR_RFC8902_PSID_MISMATCH        1000
+#define ERR_SSL_READ_ERROR               1001
+#define ERR_SSL_SHUTDOWN_1_ERROR         1002
+#define ERR_SSL_SHUTDOWN_2_ERROR         1003
+#define ERR_RFC8902_SET_SEC_ENT_ERROR    1004
+#define ERR_RFC8902_PEER_PSID_NOT_FOUND  1005
+#define ERR_RFC8902_PEER_CERT_INVALID    1006
+#define ERR_HTTP_SOCKET_CREATE           1007
+#define ERR_HTTP_HOST_DNS_ERROR          1008
+#define ERR_HTTP_CONNECT_ERROR           1009
+#define ERR_RFC8902_NEW                  1010
+#define ERR_RFC8902_SET_TLS_V13          1011
+#define ERR_RFC8902_SET_VERIFY           1012
+#define ERR_RFC8902_SET_VALUES           1013
+#define ERR_RFC8902_SET_FD               1014
+#define ERR_RFC8902_SSL_CONNECT          1015
+#define ERR_RFC8902_PRINT_1609           1016
+#define ERR_SSL_RECV_MSG                 1017
+#define ERR_SSL_SEND_MSG                 1018
+
+
 static unsigned char      optAtOrEcCertHash[CERT_HASH_LEN] = { 0xC4, 0x3B, 0x88, 0xB2, 0x35, 0x81, 0xDD, 0x3B };
 static uint64_t           optPsid = 36;
 static int                optSetCertPsid = 0;
@@ -38,7 +59,12 @@ static char               optSecEntHost[200] = "46.43.3.150";
 static short unsigned int optSecEntPort = 3999;
 static char               optServerHost[200] = "46.43.3.150";
 static short unsigned int optServerPort = 8877;
-static std::string        http_get_response;
+static std::string        result_http_response;
+static int                result_http_result_code;
+static int                result_error_code;
+static std::string        result_peer_cert_hash;
+static long               result_peer_cert_psid;
+static std::string        result_peer_cert_ssp;
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getOpensslVersion(
@@ -66,6 +92,13 @@ Java_com_qfree_its_iso21177poc_common_app_Rfc8902_setHttpServer(JNIEnv* env, job
     env->ReleaseStringUTFChars (serverAddress, pServerAddress);
     optServerPort = serverPort;
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Rfc8902_setProxyServer %s  %d", optServerHost, optServerPort);
+    return 1;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_setPsid(JNIEnv* env, jobject clazz, jlong psid) {
+    optPsid = psid;
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Rfc8902_setPsid %ld", (long)optPsid);
     return 1;
 }
 
@@ -111,7 +144,13 @@ static int ssl_recv_message(SSL *s, char * buff, size_t buff_len)
     if (processed > 0) {
         // __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: max:%d  ret:%d\n%.*s\n", (int) buff_len, processed, processed, buff);
     } else {
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: Error  ret:%d\n", processed);
+        int err = SSL_get_error(s, processed);
+        if (err == SSL_ERROR_ZERO_RETURN) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: End of file\n");
+        } else {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL_read: Error:%d\n", err);
+            result_error_code = ERR_SSL_READ_ERROR;
+        }
     }
     return processed;
 }
@@ -127,6 +166,7 @@ static int ssl_print_1609_status(SSL *s)
     if (SSL_get_1609_psid_received(s, &psid, &ssp_len, &ssp, hashed_id) <= 0) {
         //ERR_print_errors_fp(stderr);
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_get_1609_psid_received failed\n");
+        result_error_code = ERR_RFC8902_PEER_PSID_NOT_FOUND;
         return 0;
     }
     long verify_result = 0;
@@ -134,6 +174,7 @@ static int ssl_print_1609_status(SSL *s)
         //ERR_print_errors_fp(stderr);
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_get_verify_result failed %ld\n", verify_result);
         free(ssp);
+        result_error_code = ERR_RFC8902_PEER_CERT_INVALID;
         return 0;
     }
 
@@ -141,12 +182,16 @@ static int ssl_print_1609_status(SSL *s)
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Psid used for TLS is   %llu\n", (long long unsigned int)psid);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   SSP used for TLS are   %s\n", print_hex_array(ssp_len, ssp).c_str());
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Cert used for TLS is   %s\n", print_hex_array(CERT_HASH_LEN, hashed_id).c_str());
+    result_peer_cert_hash = print_hex_array(CERT_HASH_LEN, hashed_id);
+    result_peer_cert_psid = psid;
+    result_peer_cert_ssp = print_hex_array(ssp_len, ssp);
 
     free(ssp);
     ssp = 0;
 
     if (psid != optPsid) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Expected PSID/AID      %lu, peer had %ld - aborting\n", (unsigned long) optPsid, (unsigned long) psid);
+        result_error_code = ERR_RFC8902_PSID_MISMATCH;
         return 0;
     }
 
@@ -201,6 +246,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket < 0) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"socket failed");
+        result_error_code = ERR_HTTP_SOCKET_CREATE;
         return false;
     }
     struct sockaddr_in server_addr;
@@ -211,6 +257,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         const struct hostent *he = gethostbyname(optServerHost);
         if (he == 0) {
             __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "gethostbyname failed for %s\n", optServerHost);
+            result_error_code = ERR_HTTP_HOST_DNS_ERROR;
             return false;
         }
         const struct in_addr **addr_list = (const struct in_addr **) he->h_addr_list;
@@ -222,6 +269,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     if (connect(client_socket, (const struct sockaddr *)&server_addr, sizeof(server_addr))) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"connect failed");
         close(client_socket);
+        result_error_code = ERR_HTTP_CONNECT_ERROR;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"TCP connected to RFC8902 proxy server.\n");
@@ -230,6 +278,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     if (!ssl_ctx) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_CTX_new failed\n");
         close(client_socket);
+        result_error_code = ERR_RFC8902_NEW;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_CTX_new success\n");
@@ -239,6 +288,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         //ERR_print_errors_fp(stderr);
         close(client_socket);
         SSL_CTX_free(ssl_ctx);
+        result_error_code = ERR_RFC8902_SET_TLS_V13;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_CTX_set_min_proto_version success");
@@ -250,6 +300,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_new failed\n");
         close(client_socket);
         SSL_CTX_free(ssl_ctx);
+        result_error_code = ERR_RFC8902_SET_VERIFY;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_CTX_set_verify success");
@@ -260,6 +311,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         close(client_socket);
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
+        result_error_code = ERR_RFC8902_SET_SEC_ENT_ERROR;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_set_1609_sec_ent_addr success");
@@ -271,6 +323,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         close(client_socket);
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
+        result_error_code = ERR_RFC8902_SET_VALUES;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "ssl_set_RFC8902_values success");
@@ -281,6 +334,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
         close(client_socket);
+        result_error_code = ERR_RFC8902_SET_FD;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_set_fd success.  sd=%d", client_socket);
@@ -291,6 +345,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
         close(client_socket);
+        result_error_code = ERR_RFC8902_SSL_CONNECT;
         return false;
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"SSL connected.\n");
@@ -299,6 +354,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
         close(client_socket);
+        if (result_error_code == 0) result_error_code = ERR_RFC8902_PRINT_1609;
         return false;
     }
 
@@ -310,6 +366,7 @@ static bool http_get(const std::string &file_url, std::string &response_str)
         SSL_free(ssl);
         SSL_CTX_free(ssl_ctx);
         close(client_socket);
+        if (result_error_code == 0) result_error_code = ERR_SSL_SEND_MSG;
         return false;
     }
 
@@ -317,14 +374,6 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     HttpHeaders headers;
     std::vector<unsigned char> remaining;
     while (!headers.is_complete()) {
-
-        int ssl_error = SSL_get_error(ssl, processed);
-        ERR_print_errors_fp(stderr);
-        if (ssl_error) {
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server finished sending data (1)\n");
-            //ERR_print_errors_fp(stderr);
-        }
-
         if ((processed = ssl_recv_message(ssl, line, sizeof(line))) <= 0) {
             int ssl_error = SSL_get_error(ssl, processed);
             //ERR_print_errors_fp(stderr);
@@ -339,12 +388,13 @@ static bool http_get(const std::string &file_url, std::string &response_str)
                 SSL_free(ssl);
                 SSL_CTX_free(ssl_ctx);
                 close(client_socket);
+                if (result_error_code == 0) result_error_code = ERR_SSL_RECV_MSG;
                 return false;
             }
         }
 
         remaining = headers.add_data(line, processed);
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client write finished. received %d bytes, Got %d surplus bytes (payload)\n", processed, (int)remaining.size());
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Waiting for HTTP header, received %d bytes, Got %d surplus bytes (payload),  complete:%s\n", processed, (int)remaining.size(), headers.is_complete()?"y":"n");
     }
     response_str += std::string((const char*)remaining.data(), remaining.size());
 
@@ -352,24 +402,12 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Reply status:         %d\n", headers.get_reply_status());
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Reply content-length: %d\n", headers.get_content_length());
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Reply content-type:   %s\n", headers.get_content_type().c_str());
+    result_http_result_code = headers.get_reply_status();
 
-    retval = SSL_shutdown(ssl);
-    if (retval < 0) {
-        int ssl_err = SSL_get_error(ssl, retval);
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Client SSL_shutdown failed: ssl_err=%d\n", ssl_err);
-        //ERR_print_errors_fp(stderr);
-        SSL_free(ssl);
-        SSL_CTX_free(ssl_ctx);
-        close(client_socket);
-        return false;
-    }
-    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client shut down TLS session.\n");
-
-    // Wait for the payload
-    if (retval != 1) {
-        /* Consume all server's data to access the server's shutdown */
-        char buff[1000-30];
-        int totlen = (int)remaining.size();
+    int totlen = (int)remaining.size();
+    if (true) {
+        /* Consume all server's data */
+        char buff[1000];
         int loopcnt = 0;
         while (true) {
             int len = ssl_recv_message(ssl, buff, sizeof(buff));
@@ -379,25 +417,49 @@ static bool http_get(const std::string &file_url, std::string &response_str)
             //__android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"looping len:%d  totlen:%d  loopcnt:%d\n", len, totlen, loopcnt);
             response_str += std::string(buff, len);
         }
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client received %d bytes in %d loops.  ContentLen was %d bytes\n", totlen, loopcnt, headers.get_content_length());
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client received %d bytes in %d loops(1).  ContentLen was %d bytes\n", totlen, loopcnt, headers.get_content_length());
+    }
+
+    retval = SSL_shutdown(ssl);
+    if (retval < 0) {
+        int ssl_err = SSL_get_error(ssl, retval);
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Client SSL_shutdown(1) failed: ssl_err=%d\n", ssl_err);
+        //ERR_print_errors_fp(stderr);
+        SSL_free(ssl);
+        SSL_CTX_free(ssl_ctx);
+        close(client_socket);
+        result_error_code = ERR_SSL_SHUTDOWN_1_ERROR;
+        return false;
+    }
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client shut down TLS session.\n");
+
+    // Wait for the payload
+    if (retval != 1) {
+        /* Consume all server's data to access the server's shutdown */
+        char buff[1000];
+        int loopcnt = 0;
+        while (true) {
+            int len = ssl_recv_message(ssl, buff, sizeof(buff));
+            if (len <= 0) break;
+            totlen += len;
+            loopcnt++;
+            //__android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"looping len:%d  totlen:%d  loopcnt:%d\n", len, totlen, loopcnt);
+            response_str += std::string(buff, len);
+        }
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client received %d bytes in %d loops(2).  ContentLen was %d bytes\n", totlen, loopcnt, headers.get_content_length());
 
         retval = SSL_shutdown(ssl);
         if (retval != 1) {
             int ssl_err = SSL_get_error(ssl, retval);
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Waiting for server shutdown using SSL_shutdown failed: ssl_err=%d\n", ssl_err);
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Waiting for server shutdown using SSL_shutdown(2) failed: ssl_err=%d\n", ssl_err);
             SSL_free(ssl);
             SSL_CTX_free(ssl_ctx);
             close(client_socket);
+            result_error_code = ERR_SSL_SHUTDOWN_2_ERROR;
             return false;
         }
     }
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Client thinks a server shut down the TLS session.\n");
-
-    if (shutdown(client_socket, SHUT_RDWR)) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"client shutdown failed");
-    } else {
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Client shut down TCP.\n");
-    }
 
     SSL_free(ssl);
     SSL_CTX_free(ssl_ctx);
@@ -406,14 +468,19 @@ static bool http_get(const std::string &file_url, std::string &response_str)
     return true;
 }
 
-
 extern "C" JNIEXPORT jint JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_httpGet(JNIEnv* env, jobject clazz, jstring strFileUrl) {
+    result_http_response.clear();
+    result_http_result_code = 0;
+    result_error_code = 0;
+    result_peer_cert_hash = "";
+    result_peer_cert_psid = 0;
+    result_peer_cert_ssp = "";
     const char *pFileUrl = env->GetStringUTFChars (strFileUrl, 0);
     std::string sFileUrl = pFileUrl;
     // Release memory used to hold ASCII representation.
     env->ReleaseStringUTFChars (strFileUrl, pFileUrl);
-    int ret = http_get(sFileUrl, http_get_response);
+    int ret = http_get(sFileUrl, result_http_response);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "client c-code done %d", ret);
     return ret;
 }
@@ -422,5 +489,40 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_httpGetResponse(
         JNIEnv* env,
         jobject /* this */) {
-    return env->NewStringUTF(http_get_response.c_str());
+    return env->NewStringUTF(result_http_response.c_str());
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getHttpResultCode(
+        JNIEnv* env,
+        jobject /* this */) {
+    return result_http_result_code;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getErrorCode(
+        JNIEnv* env,
+        jobject /* this */) {
+    return result_error_code;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getPeerCertHash(
+        JNIEnv* env,
+        jobject /* this */) {
+    return env->NewStringUTF(result_peer_cert_hash.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getPeerCertSsp(
+        JNIEnv* env,
+        jobject /* this */) {
+    return env->NewStringUTF(result_peer_cert_ssp.c_str());
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getPeerCertPsid(
+        JNIEnv* env,
+        jobject /* this */) {
+    return result_peer_cert_psid;
 }
