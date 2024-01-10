@@ -7,6 +7,7 @@ package com.qfree.its.iso21177poc.common.app;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,6 +28,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
+import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
@@ -45,6 +47,8 @@ public class MapActivity extends AppCompatActivity {
     private static DatexReply datexReply = null;
     private static int datexReplyCnt = 0;
     MapHandler mapThreadHandler;
+    ItemizedOverlayWithFocus<OverlayItem> mOverlay;
+    String currSignId = "none";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,43 +115,16 @@ public class MapActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
 
-    private void addSigns() {
-        if (datexReply == null || datexReply.signList == null)
-            return;
-
-        Log.d(TAG, "addSigns: SignCnt=" + datexReply.signList.size());
-        ArrayList<OverlayItem> items = new ArrayList<OverlayItem>();
-        for (DatexVmsSign sign : datexReply.signList) {
-            if (sign.isBlank)
-                continue;
-            items.add(new OverlayItem(sign.signId,"Title", "Description " + sign.signId, new GeoPoint(sign.latitude, sign.longitude)));
-        }
-
-        ItemizedOverlayWithFocus<OverlayItem> mOverlay = new ItemizedOverlayWithFocus<OverlayItem>(items,
+        ArrayList<OverlayItem> noItems = new ArrayList<OverlayItem>();
+        mOverlay = new ItemizedOverlayWithFocus<OverlayItem>(noItems,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(final int index, final OverlayItem item) {
                         Log.d(TAG, "onItemSingleTapUp: " + index + "  " + item.getUid());
                         mRow1.setText("");
                         mRow2.setText("");
-                        for (DatexVmsSign sign : datexReply.signList) {
-                            if (sign.signId.equals(item.getUid())) {
-                                mRow1.setText("SignId: " + sign.signId);
-                                if (sign.hasSpeed && sign.speedLimitValue > 0)
-                                    mRow2.setText("Speed limit " + sign.speedLimitValue + " km/h");
-
-                                if (sign.imageData != null && !sign.imageData.isEmpty()) {
-                                    byte[] imageBytes = Base64.decode(sign.imageData, Base64.DEFAULT);
-                                    Bitmap decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                                    imageView.setImageBitmap(decodedImage);
-                                } else {
-                                    imageView.setImageBitmap(null);
-                                }
-                                break;
-                            }
-                        }
+                        updateSignFromId(item.getUid());
                         return true;
                     }
                     @Override
@@ -159,6 +136,60 @@ public class MapActivity extends AppCompatActivity {
 
         mOverlay.setFocusItemsOnTap(true);
         mMapView.getOverlays().add(mOverlay);
+    }
+
+    private void updateSignFromId(String signId) {
+        if (signId == null || signId.isEmpty())
+            return;
+
+        for (DatexVmsSign sign : datexReply.signList) {
+            if (sign.signId.equals(signId)) {
+                currSignId = signId;
+                updateSign(sign);
+                break;
+            }
+        }
+    }
+
+    private void updateSign(DatexVmsSign sign) {
+        Log.d(TAG, "updateSign: sign:" + sign.signId);
+        mRow1.setText("SignId: " + sign.signId);
+        if (sign.hasSpeed && sign.speedLimitValue > 0)
+            mRow2.setText("Speed limit " + sign.speedLimitValue + " km/h");
+
+        if (sign.imageData != null && !sign.imageData.isEmpty()) {
+            byte[] imageBytes = Base64.decode(sign.imageData, Base64.DEFAULT);
+            Bitmap decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+            imageView.setImageBitmap(decodedImage);
+        } else {
+            imageView.setImageBitmap(null);
+        }
+    }
+
+    private void addSigns() {
+        if (datexReply == null || datexReply.signList == null)
+            return;
+
+        // Pop down old?  How?
+        for (OverlayItem m : mOverlay.getDisplayedItems()) {
+//            Drawable dr = m.getMarker(0);
+//            Marker m;
+//            m.closeInfoWindow();
+//            m.setInfoWindow(null);
+        }
+
+        Log.d(TAG, "addSigns: SignCnt=" + datexReply.signList.size());
+        Log.d(TAG, "addSigns: overlay.cnt=" + mMapView.getOverlays().size());
+        ArrayList<OverlayItem> items = new ArrayList<OverlayItem>();
+        for (DatexVmsSign sign : datexReply.signList) {
+            if (sign.isBlank)
+                continue;
+            items.add(new OverlayItem(sign.signId,"VMS sign", sign.signId, new GeoPoint(sign.latitude, sign.longitude)));
+        }
+
+        mOverlay.removeAllItems();
+        mOverlay.addItems(items);
+        updateSignFromId(currSignId);
         mMapView.invalidate();
     }
 
@@ -176,8 +207,6 @@ public class MapActivity extends AppCompatActivity {
 
     private void populateTripView() {
         Log.d(TAG, "populateTripView");
-        mRow1.setText("");
-        mRow2.setText("");
         TripSummary mTripSummary = EventHandler.getTripSummary();
         if (mTripSummary != null) {
             OsmdroidUtils.drawRoute(getApplicationContext(), mMapView, mMapController, mTripSummary.getTripRoute());
