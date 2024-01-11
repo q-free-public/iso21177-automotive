@@ -9,6 +9,8 @@ public class Rfc8902 {
     public native int setSecurityEntity(String seEntAddress, int seEntPort);
     public native int setHttpServer(String serverAddress, int serverPort);
     public native int setPsid(long psid);
+    public native int setSsp(byte [] ssp);
+
     public native int httpGet(String fileUrl);
     public native String httpGetResponse();
     public native int getHttpResultCode();
@@ -37,31 +39,38 @@ public class Rfc8902 {
     public static final int  ERR_RFC8902_PRINT_1609 = 1016;
     public static final int  ERR_SSL_RECV_MSG = 1017;
     public static final int  ERR_SSL_SEND_MSG = 1018;
+    public static final int  ERR_RFC8902_SSP_MISMATCH = 1020;
+    public static final int  ERR_RFC8902_SSP_VSN_MISMATCH = 1021;
+    public static final int  ERR_RFC8902_SSP_MISSING = 1022;
 
 
     public String getErrorCodeStr(int errno) {
         switch (errno) {
             case 0:                                 return "no error";
-            case ERR_RFC8902_PSID_MISMATCH:         return "ERR_RFC8902_PSID_MISMATCH";
-            case ERR_SSL_READ_ERROR:                return "ERR_SSL_READ_ERROR";
-            case ERR_SSL_SHUTDOWN_1_ERROR:          return "ERR_SSL_SHUTDOWN_1_ERROR";
-            case ERR_SSL_SHUTDOWN_2_ERROR:          return "ERR_SSL_SHUTDOWN_2_ERROR";
-            case ERR_RFC8902_SET_SEC_ENT_ERROR:     return "ERR_RFC8902_SET_SEC_ENT_ERROR";
-            case ERR_RFC8902_PEER_PSID_NOT_FOUND:   return "ERR_RFC8902_PEER_PSID_NOT_FOUND";
-            case ERR_RFC8902_PEER_CERT_INVALID:     return "ERR_RFC8902_PEER_CERT_INVALID";
-            case ERR_HTTP_SOCKET_CREATE:            return "ERR_HTTP_SOCKET_CREATE";
-            case ERR_HTTP_HOST_DNS_ERROR:           return "ERR_HTTP_HOST_DNS_ERROR";
-            case ERR_HTTP_CONNECT_ERROR:            return "ERR_HTTP_CONNECT_ERROR";
-            case ERR_RFC8902_NEW:                   return "ERR_RFC8902_NEW";
-            case ERR_RFC8902_SET_TLS_V13:           return "ERR_RFC8902_SET_TLS_V13";
-            case ERR_RFC8902_SET_VERIFY:            return "ERR_RFC8902_SET_VERIFY";
-            case ERR_RFC8902_SET_VALUES:            return "ERR_RFC8902_SET_VALUES";
-            case ERR_RFC8902_SET_FD:                return "ERR_RFC8902_SET_FD";
-            case ERR_RFC8902_SSL_CONNECT:           return "ERR_RFC8902_SSL_CONNECT";
-            case ERR_RFC8902_PRINT_1609:            return "ERR_RFC8902_PRINT_1609";
-            case ERR_SSL_RECV_MSG:                  return "ERR_SSL_RECV_MSG";
-            case ERR_SSL_SEND_MSG:                  return "ERR_SSL_SEND_MSG";
+            case ERR_RFC8902_PSID_MISMATCH:         return "RFC8902_PSID_MISMATCH";
+            case ERR_RFC8902_SSP_MISMATCH:          return "RFC8902_SSP_MISMATCH";
+            case ERR_RFC8902_SSP_VSN_MISMATCH:      return "RFC8902_SSP_VSN_MISMATCH";
+            case ERR_RFC8902_SSP_MISSING:           return "RFC8902_SSP_MISSING";
+            case ERR_SSL_READ_ERROR:                return "SSL_READ_ERROR";
+            case ERR_SSL_SHUTDOWN_1_ERROR:          return "SSL_SHUTDOWN_1_ERROR";
+            case ERR_SSL_SHUTDOWN_2_ERROR:          return "SSL_SHUTDOWN_2_ERROR";
+            case ERR_RFC8902_SET_SEC_ENT_ERROR:     return "RFC8902_SET_SEC_ENT_ERROR";
+            case ERR_RFC8902_PEER_PSID_NOT_FOUND:   return "RFC8902_PEER_PSID_NOT_FOUND";
+            case ERR_RFC8902_PEER_CERT_INVALID:     return "RFC8902_PEER_CERT_INVALID";
+            case ERR_HTTP_SOCKET_CREATE:            return "HTTP_SOCKET_CREATE";
+            case ERR_HTTP_HOST_DNS_ERROR:           return "HTTP_HOST_DNS_ERROR";
+            case ERR_HTTP_CONNECT_ERROR:            return "HTTP_CONNECT_ERROR";
+            case ERR_RFC8902_NEW:                   return "RFC8902_NEW";
+            case ERR_RFC8902_SET_TLS_V13:           return "RFC8902_SET_TLS_V13";
+            case ERR_RFC8902_SET_VERIFY:            return "RFC8902_SET_VERIFY";
+            case ERR_RFC8902_SET_VALUES:            return "RFC8902_SET_VALUES";
+            case ERR_RFC8902_SET_FD:                return "RFC8902_SET_FD";
+            case ERR_RFC8902_SSL_CONNECT:           return "RFC8902_SSL_CONNECT";
+            case ERR_RFC8902_PRINT_1609:            return "RFC8902_PRINT_1609";
+            case ERR_SSL_RECV_MSG:                  return "SSL_RECV_MSG";
+            case ERR_SSL_SEND_MSG:                  return "SSL_SEND_MSG";
         }
+
         return "unknown";
     }
 }

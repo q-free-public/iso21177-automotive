@@ -7,13 +7,12 @@ package com.qfree.its.iso21177poc.common.app;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -28,13 +27,11 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
-import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.util.ArrayList;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.os.HandlerCompat;
 
 public class MapActivity extends AppCompatActivity {
     private static final String TAG = MapActivity.class.getSimpleName();
@@ -43,6 +40,9 @@ public class MapActivity extends AppCompatActivity {
     private IMapController mMapController;
     private TextView mRow1;
     private TextView mRow2;
+    private TextView mTextDatexStatus;
+    private EditText mTextRequestedPsid;
+    private EditText mTextRequestedSsp;
     ImageView imageView;
     private static DatexReply datexReply = null;
     private static int datexReplyCnt = 0;
@@ -72,8 +72,11 @@ public class MapActivity extends AppCompatActivity {
             OsmdroidUtils.setZoom(mMapController, 14.0);
             Log.d(TAG, "onCreate: MAP done");
 
-            mRow1 = findViewById(R.id.toll_cost);
-            mRow2 = findViewById(R.id.toll_distance);
+            mRow1 = findViewById(R.id.vms_signid);
+            mRow2 = findViewById(R.id.vms_details);
+            mTextDatexStatus = findViewById(R.id.datex_status);
+            mTextRequestedPsid = (EditText)findViewById(R.id.psid_req);
+            mTextRequestedSsp = (EditText)findViewById(R.id.ssp_req);
             imageView = findViewById(R.id.imageView);
 
             FloatingActionButton refreshBtn = findViewById(R.id.refresh_btn);
@@ -83,6 +86,21 @@ public class MapActivity extends AppCompatActivity {
                     Log.d(TAG, "refreshBtn");
                     try {
                         populateTripView();
+                        try {
+                            DatexFetchHttp.optPsid = Long.parseLong(mTextRequestedPsid.getText().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            mTextDatexStatus.setText("Illegal PSID entered");
+                            return;
+                        }
+                        try {
+                            DatexFetchHttp.setSsp(mTextRequestedSsp.getText().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            mTextDatexStatus.setText("Illegal SSP entered");
+                            return;
+                        }
+                        mTextDatexStatus.setText("Requesting VMS information from server...");
                         new DatexFetchHttp().execute(mapThreadHandler);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -153,9 +171,14 @@ public class MapActivity extends AppCompatActivity {
 
     private void updateSign(DatexVmsSign sign) {
         Log.d(TAG, "updateSign: sign:" + sign.signId);
-        mRow1.setText("SignId: " + sign.signId);
-        if (sign.hasSpeed && sign.speedLimitValue > 0)
+        mRow1.setText(sign.signId);
+        if (sign.hasSpeed && sign.speedLimitValue > 0) {
+            mRow2.setVisibility(View.VISIBLE);
             mRow2.setText("Speed limit " + sign.speedLimitValue + " km/h");
+        } else {
+            mRow2.setVisibility(View.INVISIBLE);
+            mRow2.setText("");
+        }
 
         if (sign.imageData != null && !sign.imageData.isEmpty()) {
             byte[] imageBytes = Base64.decode(sign.imageData, Base64.DEFAULT);
@@ -233,16 +256,52 @@ public class MapActivity extends AppCompatActivity {
         Log.d(TAG, "onDatexOk: DatexInfo:" + (obj.datexReply==null?"null":"ok") + "  SignCnt=" + ((obj.datexReply!= null && obj.datexReply.signList != null) ? obj.datexReply.signList.size() : 0));
         datexReply = obj.datexReply;
         datexReplyCnt++;
+
+        String sInfo = "Success:";
+        sInfo += " Reply number " + datexReplyCnt + ". ";
+        if (obj.datexReply !=  null && obj.datexReply.signList != null) {
+            sInfo += obj.datexReply.signList.size() + " signs found";
+        }
+        sInfo += " using " + obj.protocol;
+        sInfo += ".\r\n";
+
+        sInfo += "Certs:" + obj.certificateFamily;
+        if (obj.peerCertHash != null && !obj.peerCertHash.isEmpty()) {
+            sInfo += " PeerCert:" + obj.peerCertHash;
+            sInfo += " PSID:" + obj.peerCertPsid;
+            sInfo += " SSP:" + obj.peerCertSsp;
+        }
+        mTextDatexStatus.setText(sInfo);
+
         addSigns();
     }
 
     public void onDatexError(DatexResponse obj) {
         Log.d(TAG, "onDatexError: HttpCode=" + obj.httpResponseCode + "  Status=" + obj.status + "  CertFam:" + obj.certificateFamily);
         Log.d(TAG, "onDatexError: ErrorText=" + obj.errorText);
-        if (obj.exception != null)
+        if (obj.exception != null) {
             Log.d(TAG, "onDatexError: Exception=" + obj.exception.getClass().getName() + ": " + obj.exception.getMessage());
-        else
+        } else {
             Log.d(TAG, "onDatexError: Exception=null");
+        }
         Log.d(TAG, "onDatexError: DatexInfo:" + (obj.datexReply==null?"null":"ok") + "  SignCnt=" + ((obj.datexReply!= null && obj.datexReply.signList != null) ? obj.datexReply.signList.size() : 0));
+
+        String sInfo = "Failure:";
+        if (obj.httpResponseCode > 0)
+            sInfo += " HTTP code:" + obj.httpResponseCode;
+        sInfo += " Status:" + obj.status;
+        if (obj.errorText != null && !obj.errorText.isEmpty())
+            sInfo += " ErrorText=" + obj.errorText;
+        if (obj.exception != null) {
+            sInfo += " Exception=" + obj.exception.getClass().getName() + ": " + obj.exception.getMessage();
+        }
+        sInfo += "\r\n";
+        sInfo += "Certs:" + obj.certificateFamily;
+        if (obj.peerCertHash != null && !obj.peerCertHash.isEmpty()) {
+            sInfo += " PeerCert:" + obj.peerCertHash;
+            sInfo += " PSID:" + obj.peerCertPsid;
+            sInfo += " SSP:" + obj.peerCertSsp;
+        }
+        mTextDatexStatus.setText(sInfo);
     }
 }

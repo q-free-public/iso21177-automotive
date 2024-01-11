@@ -31,6 +31,9 @@ enum CertificateType {
 #define CERT_HASH_LEN 8
 
 #define ERR_RFC8902_PSID_MISMATCH        1000
+#define ERR_RFC8902_SSP_MISMATCH         1020
+#define ERR_RFC8902_SSP_VSN_MISMATCH     1021
+#define ERR_RFC8902_SSP_MISSING          1022
 #define ERR_SSL_READ_ERROR               1001
 #define ERR_SSL_SHUTDOWN_1_ERROR         1002
 #define ERR_SSL_SHUTDOWN_2_ERROR         1003
@@ -50,10 +53,11 @@ enum CertificateType {
 #define ERR_SSL_RECV_MSG                 1017
 #define ERR_SSL_SEND_MSG                 1018
 
-
 static unsigned char      optAtOrEcCertHash[CERT_HASH_LEN] = { 0xC4, 0x3B, 0x88, 0xB2, 0x35, 0x81, 0xDD, 0x3B };
 static uint64_t           optPsid = 36;
 static int                optSetCertPsid = 0;
+static unsigned char      optCertSsp[32];
+static int                optCertSspLen = 0;
 static bool               optUseAtCert = true;
 static char               optSecEntHost[200] = "46.43.3.150";
 static short unsigned int optSecEntPort = 3999;
@@ -98,7 +102,32 @@ Java_com_qfree_its_iso21177poc_common_app_Rfc8902_setHttpServer(JNIEnv* env, job
 extern "C" JNIEXPORT jint JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_setPsid(JNIEnv* env, jobject clazz, jlong psid) {
     optPsid = psid;
+    // optSetCertPsid = 1;
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Rfc8902_setPsid %ld", (long)optPsid);
+    return 1;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_setSsp(JNIEnv* env, jobject clazz, jbyteArray ssp) {
+    memset(optCertSsp, 0, sizeof(optCertSsp));
+    optCertSspLen = 0;
+
+    if (ssp == 0)
+        return 0;
+    optCertSspLen = env->GetArrayLength(ssp);
+    if (optCertSspLen == 0)
+        return 0;
+    jbyte* bufferPtr = env->GetByteArrayElements(ssp, 0);
+    for (int i=0; i<optCertSspLen && i<sizeof(optCertSsp); i++)
+        optCertSsp[i] = bufferPtr[i];
+    env->ReleaseByteArrayElements(ssp, bufferPtr, 0);
+//    static unsigned char      optCertSsp[32];
+//    static int                optCertSspLen = 0;
+
+    char txt[100]; txt[0] = 0;
+    for (int i=0; i<sizeof(optCertSsp); i++)
+        sprintf(txt + strlen(txt), "%02x ", optCertSsp[i]);
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Rfc8902_setSsp len=%d   bits=%s", optCertSspLen, txt);
     return 1;
 }
 
@@ -162,20 +191,24 @@ static int ssl_print_1609_status(SSL *s)
     size_t ssp_len;
     uint8_t *ssp = NULL;
     unsigned char hashed_id[CERT_HASH_LEN];
+    int ret = 0;
+    long verify_result = 0;
 
     if (SSL_get_1609_psid_received(s, &psid, &ssp_len, &ssp, hashed_id) <= 0) {
         //ERR_print_errors_fp(stderr);
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_get_1609_psid_received failed\n");
         result_error_code = ERR_RFC8902_PEER_PSID_NOT_FOUND;
-        return 0;
+        ret = 0;  // error
+        goto out;
     }
-    long verify_result = 0;
+
     if ((verify_result = SSL_get_verify_result(s)) != X509_V_OK) {
         //ERR_print_errors_fp(stderr);
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "SSL_get_verify_result failed %ld\n", verify_result);
         free(ssp);
         result_error_code = ERR_RFC8902_PEER_CERT_INVALID;
-        return 0;
+        ret = 0;  // error
+        goto out;
     }
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Peer verification      %ld %s\n", verify_result, verify_result == 0 ? "OK" : "FAIL");
@@ -186,16 +219,51 @@ static int ssl_print_1609_status(SSL *s)
     result_peer_cert_psid = psid;
     result_peer_cert_ssp = print_hex_array(ssp_len, ssp);
 
-    free(ssp);
-    ssp = 0;
-
     if (psid != optPsid) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Expected PSID/AID      %lu, peer had %ld - aborting\n", (unsigned long) optPsid, (unsigned long) psid);
         result_error_code = ERR_RFC8902_PSID_MISMATCH;
-        return 0;
+        ret = 0;  // error
+        goto out;
     }
 
-    return 1;
+    if (optCertSspLen > 0) {
+        // Check SSP bits
+        if (ssp == 0 || ssp_len == 0) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Expected SSP, remote peer had no SSP - aborting\n");
+            result_error_code = ERR_RFC8902_SSP_MISSING;
+            ret = 0;  // error
+            goto out;
+        }
+        // Assume that first byte on SSP is version byte, not subject to AND check.
+        if (ssp[0] != optCertSsp[0]) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   SSP version mismatch  expected 0x%02x, peer had 0x%02x - aborting\n", optCertSsp[0], ssp[0]);
+            result_error_code = ERR_RFC8902_SSP_VSN_MISMATCH;
+            ret = 0;  // error
+            goto out;
+        }
+        int cnt = 0;
+        for (int i=1; i<optCertSspLen && i<ssp_len; i++) {
+            unsigned int ssp_mask = optCertSsp[i] & ssp[i];
+            if (ssp_mask) cnt++;
+        }
+        if (cnt == 0) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   SSP mismatch, expected bit not found - aborting\n");
+            result_error_code = ERR_RFC8902_SSP_MISMATCH;
+            ret = 0;  // error
+            goto out;
+        }
+    }
+
+    // All tests successful
+    ret = 1; // success
+
+out:
+    if (ssp != 0) {
+        free(ssp);
+        ssp = 0;
+    }
+
+    return ret;
 }
 
 static int ssl_set_RFC8902_values(SSL *ssl, int server_support, int client_support) {

@@ -18,6 +18,7 @@ import java.util.Scanner;
 public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
     final public static String TAG = "DatexFetchHttp";
     public static long           optPsid = 36;
+    public static byte[]         optSsp = new byte[0];
     public static String         optSecEntHost = "46.43.3.150";
     public static int            optSecEntPort = 3999;
     public static String         optHttpServerHost = "46.43.3.150";
@@ -29,7 +30,6 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
     static {
        System.loadLibrary("common");
     }
-
 
 
     public native String stringFromJNI();
@@ -103,7 +103,7 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
 
     private String do_rfc8902(String url_file) {
         datexResponse.url = url_file;
-        datexResponse.protocol = "HTTPS";
+        datexResponse.protocol = "RFC8902";
         datexResponse.certificateFamily = "IEEE1609";
         datexResponse.tickStart = System.currentTimeMillis();
 
@@ -112,6 +112,7 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
         rfc8902.setSecurityEntity(optSecEntHost, optSecEntPort);
         rfc8902.setHttpServer(optHttpServerHost, optHttpServerPort);
         rfc8902.setPsid(optPsid);
+        rfc8902.setSsp(optSsp);
         int ret = rfc8902.httpGet(url_file); // 200.text");
         datexResponse.tickEnd = System.currentTimeMillis();
         datexResponse.httpResponseCode = rfc8902.getHttpResultCode();
@@ -180,4 +181,16 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
 
         mapHandler.sendMessage(Message.obtain(mapHandler, MapHandler.MSG_DATEX_ERROR, datexResponse));
     }
+
+    public static void setSsp(String hex) throws Exception {
+        int len = hex.length();
+        if (len % 2 != 0)
+            throw new Exception("Odd number of chars: len=" + len + "  str='" + hex + "'");
+
+        optSsp = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            optSsp[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4) + Character.digit(hex.charAt(i+1), 16));
+        }
+    }
+
 }
