@@ -51,9 +51,39 @@
             android:textAlignment="textStart"
             android:textSize="20dp"
             app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintEnd_toStartOf="@+id/lin_right"
+            app:layout_constraintEnd_toStartOf="@+id/protocol_group"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/datex_banner" />
+
+        <RadioGroup
+            android:id="@+id/protocol_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            app:layout_constraintEnd_toStartOf="@+id/lin_right"
+            app:layout_constraintTop_toBottomOf="@+id/datex_banner" >
+
+            <RadioButton
+                android:id="@+id/proto_https"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="HTTPS" />
+
+            <RadioButton
+                android:id="@+id/proto_rfc8902"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="RFC 8902" />
+
+            <RadioButton
+                android:id="@+id/proto_iso21177"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="ISO 21177" />
+        </RadioGroup>
 
         <LinearLayout
             android:id="@+id/lin_right"

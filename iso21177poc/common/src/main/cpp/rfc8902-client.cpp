@@ -69,6 +69,7 @@ static int                result_error_code;
 static std::string        result_peer_cert_hash;
 static long               result_peer_cert_psid;
 static std::string        result_peer_cert_ssp;
+static std::string        result_peer_cert_chain;
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getOpensslVersion(
@@ -218,6 +219,23 @@ static int ssl_print_1609_status(SSL *s)
     result_peer_cert_hash = print_hex_array(CERT_HASH_LEN, hashed_id);
     result_peer_cert_psid = psid;
     result_peer_cert_ssp = print_hex_array(ssp_len, ssp);
+
+    ssl_1609_cert_info_t certs[4];
+    if (SSL_get_1609_cert_chain(s, hashed_id, certs, sizeof(certs)) != 0) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Certificate chain information request was successfull\n");
+        for (unsigned int i=0; i<sizeof(certs)/sizeof(certs[0]) && certs[i].valid; i++) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "%s %s %s %s\n", print_hex_array(CERT_HASH_LEN, certs[i].hashedid).c_str(), certs[i].valid_from, certs[i].valid_to, certs[i].id_name);
+            if (!result_peer_cert_chain.empty())
+                result_peer_cert_chain += "\r\n";
+            result_peer_cert_chain += print_hex_array(CERT_HASH_LEN, certs[i].hashedid);
+            result_peer_cert_chain += " ";
+            result_peer_cert_chain +=  certs[i].valid_from;
+            result_peer_cert_chain += " ";
+            result_peer_cert_chain += certs[i].valid_to;
+            result_peer_cert_chain += " ";
+            result_peer_cert_chain += certs[i].id_name;
+        }
+    }
 
     if (psid != optPsid) {
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   Expected PSID/AID      %lu, peer had %ld - aborting\n", (unsigned long) optPsid, (unsigned long) psid);
@@ -544,6 +562,7 @@ Java_com_qfree_its_iso21177poc_common_app_Rfc8902_httpGet(JNIEnv* env, jobject c
     result_peer_cert_hash = "";
     result_peer_cert_psid = 0;
     result_peer_cert_ssp = "";
+    result_peer_cert_chain = "";
     const char *pFileUrl = env->GetStringUTFChars (strFileUrl, 0);
     std::string sFileUrl = pFileUrl;
     // Release memory used to hold ASCII representation.
@@ -593,4 +612,11 @@ Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getPeerCertPsid(
         JNIEnv* env,
         jobject /* this */) {
     return result_peer_cert_psid;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qfree_its_iso21177poc_common_app_Rfc8902_getPeerCertChain(
+        JNIEnv* env,
+        jobject /* this */) {
+    return env->NewStringUTF(result_peer_cert_chain.c_str());
 }

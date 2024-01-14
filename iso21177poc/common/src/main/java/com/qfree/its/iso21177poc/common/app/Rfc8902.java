@@ -18,6 +18,7 @@ public class Rfc8902 {
     public native String getPeerCertHash();
     public native String getPeerCertSsp();
     public native long getPeerCertPsid();
+    public native String getPeerCertChain();
 
     // Constants are aligned with rfc8902-client.cpp
     public static final int ERR_RFC8902_PSID_MISMATCH = 1000;

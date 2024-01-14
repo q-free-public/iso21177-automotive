@@ -13,16 +13,25 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.Principal;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Scanner;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.security.auth.x500.X500Principal;
 
 public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
     final public static String TAG = "DatexFetchHttp";
+    public static enum Protocol {RFC8902, ISO21177, HTTPS};
+
     public static long           optPsid = 36;
     public static byte[]         optSsp = new byte[0];
     public static String         optSecEntHost = "46.43.3.150";
     public static int            optSecEntPort = 3999;
     public static String         optHttpServerHost = "46.43.3.150";
     public static int            optHttpServerPort = 8877;
+    public static Protocol       optProtocol = Protocol.HTTPS;
 
     private Handler mapHandler;
     private DatexResponse datexResponse;
@@ -54,9 +63,31 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
 
         testJni();
 
-        return do_rfc8902("/datex-all.json");
-//        return do_https("its1.q-free.com", "/geoserver/all.json");
-//        return do_https("its1.q-free.com", "/geoserver/all.speed");
+        switch (optProtocol) {
+            case HTTPS:
+                return do_https("its1.q-free.com", "/geoserver/all.json");
+                // return do_https("its1.q-free.com", "/geoserver/all.speed");
+            case RFC8902:
+                return do_rfc8902("/datex-all.json");
+            case ISO21177:
+                return do_iso21177("/datex-all.json");
+        }
+
+        datexResponse.protocol = "Unknown: " + optProtocol;
+        datexResponse.errorText = "Protocol not selected";
+        return null;
+    }
+
+    private String do_iso21177(String file) {
+        datexResponse.url = file;
+        datexResponse.protocol = "ISO21177";
+        datexResponse.certificateFamily = "IEEE1609";
+        datexResponse.tickStart = System.currentTimeMillis();
+        datexResponse.tickEnd = System.currentTimeMillis();
+        datexResponse.status = null;
+        datexResponse.errorText = "Not implemented";
+
+        return null;
     }
 
     private String do_https(String host, String file) {
@@ -64,10 +95,10 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
             URL url = new URL("https://" + host + file);
             datexResponse.url = url.toString();
             datexResponse.protocol = "HTTPS";
-            datexResponse.certificateFamily = "X.509";
+            datexResponse.certificateFamily = "Unknown";
             datexResponse.tickStart = System.currentTimeMillis();
 
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
             // Log the server response code
             int responseCode = connection.getResponseCode();
@@ -76,6 +107,21 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
 
             // And if the code was HTTP_OK then parse the contents
             if (responseCode == HttpURLConnection.HTTP_OK) {
+
+                datexResponse.x509CertList = connection.getServerCertificates();
+                if (datexResponse.x509CertList != null) {
+                    for (Certificate currCert : datexResponse.x509CertList) {
+                        Log.d(TAG,"Certificate Type : " + currCert.getType());
+                        Log.d(TAG,"Certificate Public Key Algorithm : " + currCert.getPublicKey().getAlgorithm());
+                        Log.d(TAG,"Certificate Public Key Format : " + currCert.getPublicKey().getFormat());
+                        if (currCert instanceof X509Certificate) {
+                            X509Certificate x509cert = (X509Certificate) currCert;
+                            Log.d(TAG,"Certificate Issuer:  " + x509cert.getIssuerDN());
+                            Log.d(TAG,"Certificate Subject: " + x509cert.getSubjectDN());
+                            datexResponse.certificateFamily = "X.509";
+                        }
+                    }
+                }
 
                 // Convert request content to string
                 InputStream is = connection.getInputStream();
@@ -86,19 +132,18 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
 
                 Log.d(TAG, "content size: " + content.length());
                 return content;
+            } else {
+                datexResponse.status = DatexResponse.Status.HTTP_FAILURE;
+                return null;
             }
 
-        } catch (MalformedURLException e) {
+        } catch (Exception e) {
+            Log.d(TAG, "content error");
+            datexResponse.status = DatexResponse.Status.HTTP_EXCEPTION;
             datexResponse.exception = e;
             e.printStackTrace();
-        } catch (IOException e) {
-            datexResponse.exception = e;
-            e.printStackTrace();
+            return null;
         }
-
-        Log.d(TAG, "content error");
-        datexResponse.status = DatexResponse.Status.HTTP_FAILURE;
-        return null;
     }
 
     private String do_rfc8902(String url_file) {
@@ -121,6 +166,7 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
         datexResponse.peerCertHash = rfc8902.getPeerCertHash();
         datexResponse.peerCertPsid = rfc8902.getPeerCertPsid();
         datexResponse.peerCertSsp = rfc8902.getPeerCertSsp();
+        datexResponse.peerCertChain = rfc8902.getPeerCertChain();
         Log.d(TAG, String.format("C++ RFC8902  ret=%d  Time used %.3f sec   HttpResultCode=%d  ErrorCode=%d=%s", ret, (datexResponse.tickEnd - datexResponse.tickStart) / 1000.0, datexResponse.httpResponseCode, errorCode, datexResponse.errorText));
         Log.d(TAG, String.format("C++ RFC8902  Peer Cert hash: %s", datexResponse.peerCertHash));
         Log.d(TAG, String.format("C++ RFC8902  Peer Cert PSID: %d", datexResponse.peerCertPsid));

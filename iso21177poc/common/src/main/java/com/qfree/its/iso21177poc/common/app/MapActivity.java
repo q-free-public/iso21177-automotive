@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -29,7 +30,11 @@ import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
 import org.osmdroid.views.overlay.OverlayItem;
 
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -43,6 +48,9 @@ public class MapActivity extends AppCompatActivity {
     private TextView mTextDatexStatus;
     private EditText mTextRequestedPsid;
     private EditText mTextRequestedSsp;
+    private RadioButton mBtnProtoHttps;
+    private RadioButton mBtnProtoRfc8902;
+    private RadioButton mBtnProtoIso21177;
     ImageView imageView;
     private static DatexReply datexReply = null;
     private static int datexReplyCnt = 0;
@@ -77,6 +85,9 @@ public class MapActivity extends AppCompatActivity {
             mTextDatexStatus = findViewById(R.id.datex_status);
             mTextRequestedPsid = (EditText)findViewById(R.id.psid_req);
             mTextRequestedSsp = (EditText)findViewById(R.id.ssp_req);
+            mBtnProtoHttps = (RadioButton) findViewById(R.id.proto_https);
+            mBtnProtoRfc8902 = (RadioButton) findViewById(R.id.proto_rfc8902);
+            mBtnProtoIso21177 = (RadioButton) findViewById(R.id.proto_iso21177);
             imageView = findViewById(R.id.imageView);
 
             FloatingActionButton refreshBtn = findViewById(R.id.refresh_btn);
@@ -100,6 +111,15 @@ public class MapActivity extends AppCompatActivity {
                             mTextDatexStatus.setText("Illegal SSP entered");
                             return;
                         }
+
+                        DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTPS;
+                        if (mBtnProtoHttps.isChecked())
+                            DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTPS;
+                        else if (mBtnProtoRfc8902.isChecked())
+                            DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.RFC8902;
+                        else if (mBtnProtoIso21177.isChecked())
+                            DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.ISO21177;
+
                         mTextDatexStatus.setText("Requesting VMS information from server...");
                         new DatexFetchHttp().execute(mapThreadHandler);
                     } catch (Exception e) {
@@ -265,15 +285,48 @@ public class MapActivity extends AppCompatActivity {
         sInfo += " using " + obj.protocol;
         sInfo += ".\r\n";
 
-        sInfo += "Certs:" + obj.certificateFamily;
+        sInfo += "Certificate type:" + obj.certificateFamily;
+
         if (obj.peerCertHash != null && !obj.peerCertHash.isEmpty()) {
-            sInfo += " PeerCert:" + obj.peerCertHash;
+            sInfo += ".\r\n";
+            sInfo += "PeerCert:" + obj.peerCertHash;
             sInfo += " PSID:" + obj.peerCertPsid;
             sInfo += " SSP:" + obj.peerCertSsp;
+        }
+
+        if (obj.peerCertChain != null && !obj.peerCertChain.isEmpty()) {
+            sInfo += "\r\n";
+            sInfo += obj.peerCertChain;
+        }
+
+        if (obj.x509CertList != null) {
+            sInfo += ".";
+            String sFinalIssuer = "";
+            SimpleDateFormat fmt = new SimpleDateFormat("YYYY-MM-dd");
+            for (Certificate currCert : obj.x509CertList) {
+                sInfo += "\r\n";
+                if (currCert instanceof X509Certificate) {
+                    X509Certificate x509cert = (X509Certificate) currCert;
+                    sInfo += cleanName(x509cert.getSubjectDN().getName());
+                    Date dateFrom = x509cert.getNotBefore();
+                    Date dateTo = x509cert.getNotAfter();
+                    if (dateFrom != null) sInfo += " From:" + fmt.format(dateFrom);
+                    if (dateTo != null) sInfo += " To:" + fmt.format(dateTo);
+                    sFinalIssuer = cleanName(x509cert.getIssuerDN().getName());
+                }
+            }
+            sInfo += "\r\n" + sFinalIssuer;
         }
         mTextDatexStatus.setText(sInfo);
 
         addSigns();
+    }
+
+    private String cleanName(String name) {
+        name = name.replaceAll(",C=[A-Z][A-Z]", "");
+        name = name.replaceAll("^.*,O=", "");
+        name = name.replaceAll("^CN=", "");
+        return name;
     }
 
     public void onDatexError(DatexResponse obj) {
