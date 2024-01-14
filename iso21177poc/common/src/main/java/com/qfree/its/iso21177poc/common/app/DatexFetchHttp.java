@@ -23,7 +23,7 @@ import javax.security.auth.x500.X500Principal;
 
 public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
     final public static String TAG = "DatexFetchHttp";
-    public static enum Protocol {RFC8902, ISO21177, HTTPS};
+    public static enum Protocol {RFC8902, ISO21177, HTTP, HTTPS};
 
     public static long           optPsid = 36;
     public static byte[]         optSsp = new byte[0];
@@ -64,6 +64,8 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
         testJni();
 
         switch (optProtocol) {
+            case HTTP:
+                return do_http("its1.q-free.com", "/geoserver/all.json");
             case HTTPS:
                 return do_https("its1.q-free.com", "/geoserver/all.json");
                 // return do_https("its1.q-free.com", "/geoserver/all.speed");
@@ -88,6 +90,48 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
         datexResponse.errorText = "Not implemented";
 
         return null;
+    }
+
+    private String do_http(String host, String file) {
+        try {
+            URL url = new URL("http://" + host + file);
+            datexResponse.url = url.toString();
+            datexResponse.protocol = "HTTP";
+            datexResponse.certificateFamily = "Unknown";
+            datexResponse.tickStart = System.currentTimeMillis();
+
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            // Log the server response code
+            int responseCode = connection.getResponseCode();
+            datexResponse.httpResponseCode = responseCode;
+            Log.d(TAG, "Server responded with: " + responseCode);
+
+            // And if the code was HTTP_OK then parse the contents
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+
+                // Convert request content to string
+                InputStream is = connection.getInputStream();
+                String content = convertInputStream(is, "UTF-8");
+                is.close();
+                datexResponse.tickEnd = System.currentTimeMillis();
+                datexResponse.status = DatexResponse.Status.HTTP_COMPLETE;
+                datexResponse.certificateFamily = "No security";
+
+                Log.d(TAG, "content size: " + content.length());
+                return content;
+            } else {
+                datexResponse.status = DatexResponse.Status.HTTP_FAILURE;
+                return null;
+            }
+
+        } catch (Exception e) {
+            Log.d(TAG, "content error");
+            datexResponse.status = DatexResponse.Status.HTTP_EXCEPTION;
+            datexResponse.exception = e;
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private String do_https(String host, String file) {

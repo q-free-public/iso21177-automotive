@@ -48,6 +48,7 @@ public class MapActivity extends AppCompatActivity {
     private TextView mTextDatexStatus;
     private EditText mTextRequestedPsid;
     private EditText mTextRequestedSsp;
+    private RadioButton mBtnProtoHttp;
     private RadioButton mBtnProtoHttps;
     private RadioButton mBtnProtoRfc8902;
     private RadioButton mBtnProtoIso21177;
@@ -85,6 +86,7 @@ public class MapActivity extends AppCompatActivity {
             mTextDatexStatus = findViewById(R.id.datex_status);
             mTextRequestedPsid = (EditText)findViewById(R.id.psid_req);
             mTextRequestedSsp = (EditText)findViewById(R.id.ssp_req);
+            mBtnProtoHttp = (RadioButton) findViewById(R.id.proto_http);
             mBtnProtoHttps = (RadioButton) findViewById(R.id.proto_https);
             mBtnProtoRfc8902 = (RadioButton) findViewById(R.id.proto_rfc8902);
             mBtnProtoIso21177 = (RadioButton) findViewById(R.id.proto_iso21177);
@@ -112,8 +114,10 @@ public class MapActivity extends AppCompatActivity {
                             return;
                         }
 
-                        DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTPS;
-                        if (mBtnProtoHttps.isChecked())
+                        DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTP;
+                        if (mBtnProtoHttp.isChecked())
+                            DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTP;
+                        else if (mBtnProtoHttps.isChecked())
                             DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.HTTPS;
                         else if (mBtnProtoRfc8902.isChecked())
                             DatexFetchHttp.optProtocol = DatexFetchHttp.Protocol.RFC8902;

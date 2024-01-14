@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-<!--        <base-config cleartextTrafficPermitted="true">-->
-<!--            <trust-anchors>-->
-<!--                <certificates src="system" />-->
-<!--            </trust-anchors>-->
-<!--        </base-config>-->
-<!--    <domain-config cleartextTrafficPermitted="true">-->
-<!--        <domain includeSubdomains="true">192.168.39.140</domain> &lt;!&ndash; Trysil &ndash;&gt;-->
-<!--        <domain includeSubdomains="true">192.168.0.9</domain> &lt;!&ndash; Kanalveien &ndash;&gt;-->
-<!--        <domain includeSubdomains="true">192.168.0.25</domain> &lt;!&ndash; Kanalveien &ndash;&gt;-->
-<!--        <domain includeSubdomains="true">192.168.88.249</domain> &lt;!&ndash; Geosum &ndash;&gt;-->
-<!--        <domain includeSubdomains="true">192.168.21.135</domain> &lt;!&ndash; Q-Free Employee &ndash;&gt;-->
-<!--        <domain includeSubdomains="true">192.168.88.219</domain> &lt;!&ndash;Localhost&ndash;&gt;-->
-<!--    </domain-config>-->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">its1.q-free.com</domain>
+    </domain-config>
 </network-security-config>
