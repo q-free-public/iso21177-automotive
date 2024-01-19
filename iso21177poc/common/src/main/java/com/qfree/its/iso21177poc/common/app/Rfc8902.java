@@ -43,7 +43,9 @@ public class Rfc8902 {
     public static final int  ERR_RFC8902_SSP_MISMATCH = 1020;
     public static final int  ERR_RFC8902_SSP_VSN_MISMATCH = 1021;
     public static final int  ERR_RFC8902_SSP_MISSING = 1022;
-
+    public static final int  ERR_RFC8902_CERT_VALIDATION_ERROR = 1025;
+    public static final int  ERR_ISO21177_DECRYPTION_ERROR = 1026;
+    public static final int  ERR_ISO21177_APP_ACCESS_DENIED_PSID = 1027;
 
     public String getErrorCodeStr(int errno) {
         switch (errno) {
@@ -70,6 +72,9 @@ public class Rfc8902 {
             case ERR_RFC8902_PRINT_1609:            return "RFC8902_PRINT_1609";
             case ERR_SSL_RECV_MSG:                  return "SSL_RECV_MSG";
             case ERR_SSL_SEND_MSG:                  return "SSL_SEND_MSG";
+            case ERR_RFC8902_CERT_VALIDATION_ERROR: return "RFC8902_CERT_VALIDATION_ERROR";
+            case ERR_ISO21177_DECRYPTION_ERROR:     return "ISO21177_DECRYPTION_ERROR";
+            case ERR_ISO21177_APP_ACCESS_DENIED_PSID:     return "ISO21177_APP_ACCESS_DENIED_PSID";
         }
 
         return "unknown";

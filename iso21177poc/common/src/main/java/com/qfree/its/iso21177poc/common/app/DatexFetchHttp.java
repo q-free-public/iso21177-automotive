@@ -89,7 +89,9 @@ public class DatexFetchHttp extends AsyncTask<Handler, Void, String> {
         datexResponse.status = null;
         datexResponse.errorText = "Not implemented";
 
-        return null;
+        String s = do_rfc8902(file);
+        datexResponse.protocol = "ISO21177";
+        return s;
     }
 
     private String do_http(String host, String file) {

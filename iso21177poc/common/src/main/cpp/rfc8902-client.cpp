@@ -31,9 +31,6 @@ enum CertificateType {
 #define CERT_HASH_LEN 8
 
 #define ERR_RFC8902_PSID_MISMATCH        1000
-#define ERR_RFC8902_SSP_MISMATCH         1020
-#define ERR_RFC8902_SSP_VSN_MISMATCH     1021
-#define ERR_RFC8902_SSP_MISSING          1022
 #define ERR_SSL_READ_ERROR               1001
 #define ERR_SSL_SHUTDOWN_1_ERROR         1002
 #define ERR_SSL_SHUTDOWN_2_ERROR         1003
@@ -52,6 +49,12 @@ enum CertificateType {
 #define ERR_RFC8902_PRINT_1609           1016
 #define ERR_SSL_RECV_MSG                 1017
 #define ERR_SSL_SEND_MSG                 1018
+#define ERR_RFC8902_SSP_MISMATCH            1020
+#define ERR_RFC8902_SSP_VSN_MISMATCH        1021
+#define ERR_RFC8902_SSP_MISSING             1022
+#define ERR_RFC8902_CERT_VALIDATION_ERROR   1025
+#define ERR_ISO21177_DECRYPTION_ERROR       1026
+#define ERR_ISO21177_APP_ACCESS_DENIED_PSID 1027
 
 static unsigned char      optAtOrEcCertHash[CERT_HASH_LEN] = { 0xC4, 0x3B, 0x88, 0xB2, 0x35, 0x81, 0xDD, 0x3B };
 static uint64_t           optPsid = 36;
@@ -259,6 +262,19 @@ static int ssl_print_1609_status(SSL *s)
             ret = 0;  // error
             goto out;
         }
+
+#if 0
+        ///aaaa
+        if (ssp[0] == 1) {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"   SSP version mismatch  expected 0x%02x, peer had 0x%02x - aborting\n", optCertSsp[0], ssp[0]);
+//            result_error_code = ERR_RFC8902_CERT_VALIDATION_ERROR;
+//            result_error_code = ERR_ISO21177_DECRYPTION_ERROR;
+            result_error_code = ERR_ISO21177_APP_ACCESS_DENIED_PSID;
+            ret = 0;  // error
+            goto out;
+        }
+#endif
+
         int cnt = 0;
         for (int i=1; i<optCertSspLen && i<ssp_len; i++) {
             unsigned int ssp_mask = optCertSsp[i] & ssp[i];
